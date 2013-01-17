@@ -21,5 +21,5 @@ let ``can parse empty main method with random whitespace``() =
 let ``can parse nearly-empty main method``() =
     let result = Parser.parse "void main(void) { ; }"
     let expected =
-        [Ast.FunctionDeclaration(Ast.Void, "main", None, (None, [])) ]
+        [Ast.FunctionDeclaration(Ast.Void, "main", None, (None, [Ast.ExpressionStatement(Ast.Nop)])) ]
     Assert.That(result, Is.EqualTo(expected))

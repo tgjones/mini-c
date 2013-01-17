@@ -8,10 +8,10 @@ let pIdentifier = (identifier (IdentifierOptions())) .>> spaces
 let pLParen = skipString "(" .>> spaces
 let pRParen = skipString ")" .>> spaces
 
-let pLCurly = pstring "{" .>> spaces
-let pRCurly = pstring "}" .>> spaces
+let pLCurly = skipString "{" .>> spaces
+let pRCurly = skipString "}" .>> spaces
 
-let pSemicolon = pstring ";"
+let pSemicolon = skipString ";" .>> spaces
 
 let ws = spaces1
 
