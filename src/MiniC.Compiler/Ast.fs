@@ -14,12 +14,18 @@ and TypeSpec =
 
 and Identifier = string
 
-and Parameters =
-    | ParameterList
-    | Void
+and Parameters = Parameter list
+
+and Parameter =
+    | ScalarParameter of TypeSpec * Identifier
+    | ArrayParameter of TypeSpec * Identifier
 
 and Statement =
     | CompoundStatement of CompoundStatement
+    | ExpressionStatement of ExpressionStatement
+
+and ExpressionStatement =
+    Nop
 
 and CompoundStatement = LocalDeclarations option * Statement list
 
