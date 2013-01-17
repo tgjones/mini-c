@@ -45,8 +45,11 @@ do pExpressionRef := pipe3 pExpressionP pBinaryOperator pExpressionP
 let pExpressionStatement = choice [pSemicolon >>% Nop
                                    (pExpression .>> pSemicolon) |>> Expression]
 
+let pReturnStatement = skipString "return" >>. opt pExpression .>> pSemicolon
+
 let pStatement = choice [pExpressionStatement |>> (fun x -> ExpressionStatement(x))
-                         pCompoundStatement   |>> (fun x -> CompoundStatement(x))]
+                         pCompoundStatement   |>> (fun x -> CompoundStatement(x))
+                         pReturnStatement     |>> (fun x -> ReturnStatement(x))]
 
 let pStatementList = many pStatement
 

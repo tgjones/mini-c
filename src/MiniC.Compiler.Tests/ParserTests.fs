@@ -53,11 +53,11 @@ let ``can parse binary expression``() =
     Assert.That(result, Is.EqualTo(expected))
 
 [<Test>]
-let ``can parse return``() =
+let ``can parse return statement``() =
     let result = Parser.parse "
         void main(void) {
             return;
         }"
     let expected =
-        [Ast.FunctionDeclaration(Ast.Void, "main", None, (None, [Ast.ExpressionStatement(Ast.Nop)])) ]
+        [Ast.FunctionDeclaration(Ast.Void, "main", None, (None, [Ast.ReturnStatement(None)])) ]
     Assert.That(result, Is.EqualTo(expected))
