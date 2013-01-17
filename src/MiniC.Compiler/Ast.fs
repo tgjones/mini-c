@@ -23,7 +23,7 @@ and Parameter =
 and Statement =
     | CompoundStatement of CompoundStatement
     | ExpressionStatement of ExpressionStatement
-    | ReturnStatement of ReturnStatement
+    | ReturnStatement of Expression option
 
 and ExpressionStatement =
     | Expression of Expression
@@ -36,8 +36,6 @@ and LocalDeclarations = LocalDeclaration list
 and LocalDeclaration =
     | ScalarDeclaration of TypeSpec * Identifier
     | ArrayDeclaration of TypeSpec * Identifier
-
-and ReturnStatement = Expression option
 
 and Expression =
     | BinaryExpression of Expression * BinaryOperator * Expression
