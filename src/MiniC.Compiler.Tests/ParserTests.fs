@@ -31,8 +31,23 @@ let ``can parse nearly-empty main method``() =
 let ``can parse binary expression``() =
     let result = Parser.parse "
         void main(void) {
-            123+456
+            123+456;
         }"
     let expected =
-        [Ast.FunctionDeclaration(Ast.Void, "main", None, (None, [Ast.ExpressionStatement(Ast.Nop)])) ]
+        [Ast.FunctionDeclaration(
+            Ast.Void,
+            "main",
+            None,
+            (None, [
+                Ast.ExpressionStatement(
+                    Ast.Expression(
+                        Ast.BinaryExpression(
+                            Ast.LiteralExpression(Ast.IntLiteral(123)),
+                            Ast.Add,
+                            Ast.LiteralExpression(Ast.IntLiteral(456))
+                       )
+                    )
+                )
+            ])
+        )]
     Assert.That(result, Is.EqualTo(expected))

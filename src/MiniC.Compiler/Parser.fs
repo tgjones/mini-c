@@ -18,15 +18,32 @@ let ws = spaces1
 let pCompoundStatement, pCompoundStatementRef = 
     createParserForwardedToRef<CompoundStatement, unit>()
 
-let pTypeSpec = (choice [pstring "void"  >>% TypeSpec.Void
-                         pstring "bool"  >>% TypeSpec.Bool
-                         pstring "int"   >>% TypeSpec.Int
-                         pstring "float" >>% TypeSpec.Float]
+let pBinaryOperator = (choice[skipString "+" >>% BinaryOperator.Add
+                              skipString "+" >>% BinaryOperator.Subtract]
+                       .>> spaces)
+
+let pTypeSpec = (choice [skipString "void"  >>% TypeSpec.Void
+                         skipString "bool"  >>% TypeSpec.Bool
+                         skipString "int"   >>% TypeSpec.Int
+                         skipString "float" >>% TypeSpec.Float]
                  .>> ws)
 
 let pParameters = ((skipString "void") .>> spaces) >>% None
 
-let pExpressionStatement = pSemicolon >>% Nop
+let pExpression, pExpressionRef =
+    createParserForwardedToRef<Expression, unit>()
+
+let pbool =     (stringReturn "true" true)
+            <|> (stringReturn "false" false)
+
+let pExpressionP = choice[pbool |>> (fun x -> LiteralExpression(BoolLiteral(x)))
+                          pint32 |>> (fun x -> LiteralExpression(IntLiteral(x)))]
+
+do pExpressionRef := pipe3 pExpressionP pBinaryOperator pExpressionP
+                           (fun x y z -> BinaryExpression(x, y, z))
+
+let pExpressionStatement = choice [pSemicolon >>% Nop
+                                   (pExpression .>> pSemicolon) |>> Expression]
 
 let pStatement = choice [pExpressionStatement |>> (fun x -> ExpressionStatement(x))
                          pCompoundStatement   |>> (fun x -> CompoundStatement(x))]

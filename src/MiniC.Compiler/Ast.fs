@@ -25,7 +25,8 @@ and Statement =
     | ExpressionStatement of ExpressionStatement
 
 and ExpressionStatement =
-    Nop
+    | Expression of Expression
+    | Nop
 
 and CompoundStatement = LocalDeclarations option * Statement list
 
@@ -34,3 +35,33 @@ and LocalDeclarations = LocalDeclaration list
 and LocalDeclaration =
     | ScalarDeclaration of TypeSpec * Identifier
     | ArrayDeclaration of TypeSpec * Identifier
+
+and Expression =
+    | BinaryExpression of Expression * BinaryOperator * Expression
+    | UnaryExpression of UnaryOperator * Expression
+    | LiteralExpression of Literal
+
+and BinaryOperator =
+    | ConditionalOr
+    | Equal
+    | NotEqual
+    | LessEqual
+    | Less
+    | GreaterEqual
+    | Greater
+    | ConditionalAnd
+    | Add
+    | Subtract
+    | Multiply
+    | Divide
+    | Modulus
+
+and UnaryOperator =
+    | LogicalNegate
+    | Negate
+    | Identity
+
+and Literal =
+    | BoolLiteral of bool
+    | IntLiteral of int
+    | FloatLiteral of float
