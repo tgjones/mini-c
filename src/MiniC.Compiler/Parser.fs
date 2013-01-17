@@ -3,13 +3,13 @@
 open FParsec
 open Ast
 
-let pIdentifier = identifier (IdentifierOptions())
+let pIdentifier = (identifier (IdentifierOptions())) .>> spaces
 
-let pLParen = pstring "("
-let pRParen = pstring ")"
+let pLParen = skipString "(" .>> spaces
+let pRParen = skipString ")" .>> spaces
 
-let pLCurly = pstring "{"
-let pRCurly = pstring "}"
+let pLCurly = pstring "{" .>> spaces
+let pRCurly = pstring "}" .>> spaces
 
 let pSemicolon = pstring ";"
 
@@ -18,12 +18,13 @@ let ws = spaces1
 let pCompoundStatement, pCompoundStatementRef = 
     createParserForwardedToRef<CompoundStatement, unit>()
 
-let pTypeSpec = choice [pstring "void"  >>% TypeSpec.Void
-                        pstring "bool"  >>% TypeSpec.Bool
-                        pstring "int"   >>% TypeSpec.Int
-                        pstring "float" >>% TypeSpec.Float]
+let pTypeSpec = (choice [pstring "void"  >>% TypeSpec.Void
+                         pstring "bool"  >>% TypeSpec.Bool
+                         pstring "int"   >>% TypeSpec.Int
+                         pstring "float" >>% TypeSpec.Float]
+                 .>> ws)
 
-let pParameters = pstring "void" >>% None
+let pParameters = ((skipString "void") .>> spaces) >>% None
 
 let pExpressionStatement = pSemicolon >>% Nop
 
@@ -32,16 +33,16 @@ let pStatement = choice [pExpressionStatement |>> (fun x -> ExpressionStatement(
 
 let pStatementList = many pStatement
 
-do pCompoundStatementRef := ((ws >>. pLCurly >>. ws) >>. pStatementList .>> pRCurly)
+do pCompoundStatementRef := (pLCurly >>. pStatementList .>> pRCurly)
                             |>> (fun x -> (None, x))
 
-let pFunctionDeclaration = pipe4 (pTypeSpec .>> ws) pIdentifier 
+let pFunctionDeclaration = pipe4 pTypeSpec pIdentifier 
                                  (pLParen >>. pParameters .>> pRParen) pCompoundStatement
                                  (fun x y z w -> FunctionDeclaration(x, y, z, w))
 
 let pDeclaration = choice [pFunctionDeclaration]
 
-let pProgram = (many1 pDeclaration) .>> eof
+let pProgram = (spaces >>. (many1 pDeclaration)) .>> eof
 
 let parse s =
     let result = run pProgram s
