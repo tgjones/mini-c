@@ -5,29 +5,38 @@ open Ast
 
 let configurator = ParserFactory.Configure<System.Object>()
 
-let program = configurator.CreateNonTerminal()
-let declarationList = configurator.CreateNonTerminal()
-let declaration = configurator.CreateNonTerminal()
-let functionDeclaration = configurator.CreateNonTerminal()
-let compoundStatement = configurator.CreateNonTerminal()
-let typeSpec = configurator.CreateNonTerminal()
-let parameters = configurator.CreateNonTerminal()
-let optionalStatementList = configurator.CreateNonTerminal()
-let statementList = configurator.CreateNonTerminal()
-let statement = configurator.CreateNonTerminal()
-let expressionStatement = configurator.CreateNonTerminal()
-let expression = configurator.CreateNonTerminal()
-let returnStatement = configurator.CreateNonTerminal()
+let nonTerminal = configurator.CreateNonTerminal
 
-let plus = configurator.CreateTerminal(@"\+")
+let terminalParse regex f =
+    configurator.CreateTerminal(regex, new System.Func<string, obj>(f))
 
-let number = configurator.CreateTerminal(@"\d+", (fun s -> Ast.IntLiteral(System.Int32.Parse(s)) :> obj))
-let trueLiteral = configurator.CreateTerminal("true", (fun s -> box (Ast.BoolLiteral(true))))
-let falseLiteral = configurator.CreateTerminal("false", (fun s -> box (Ast.BoolLiteral(false))))
-let voidKeyword = configurator.CreateTerminal("void")
-let intKeyword = configurator.CreateTerminal("int", (fun s -> box Ast.Int))
-let returnKeyword = configurator.CreateTerminal("return")
-let identifier2 = configurator.CreateTerminal(@"\w+", (fun s -> s :> obj))
+let terminal regex =
+    configurator.CreateTerminal(regex)
+
+// Non-terminals
+let program               = nonTerminal()
+let declarationList       = nonTerminal()
+let declaration           = nonTerminal()
+let functionDeclaration   = nonTerminal()
+let compoundStatement     = nonTerminal()
+let typeSpec              = nonTerminal()
+let parameters            = nonTerminal()
+let optionalStatementList = nonTerminal()
+let statementList         = nonTerminal()
+let statement             = nonTerminal()
+let expressionStatement   = nonTerminal()
+let expression            = nonTerminal()
+let returnStatement       = nonTerminal()
+
+// Terminals
+let returnKeyword = terminal      "return"
+let voidKeyword   = terminal      "void"
+let plus          = terminalParse @"\+"    (fun s -> box s)
+let number        = terminalParse @"\d+"   (fun s -> box (Ast.IntLiteral(int32 s)))
+let trueLiteral   = terminalParse "true"   (fun s -> box (Ast.BoolLiteral(true)))
+let falseLiteral  = terminalParse "false"  (fun s -> box (Ast.BoolLiteral(false)))
+let intKeyword    = terminalParse "int"    (fun s -> box Ast.Int)
+let identifier    = terminalParse @"\w+"   (fun s -> box s)
 
 program.AddProduction(declarationList).SetReduceToFirst()
 declarationList.AddProduction(declarationList, declaration).SetReduceFunction((fun o ->
@@ -45,7 +54,7 @@ expression.AddProduction(expression, plus, expression)
 expression.AddProduction(number)
     .SetReduceFunction((fun o -> upcast (Ast.LiteralExpression(downcast o.[0]))))
 
-functionDeclaration.AddProduction(typeSpec, identifier2, "(", parameters, ")", compoundStatement).SetReduceFunction(
+functionDeclaration.AddProduction(typeSpec, identifier, "(", parameters, ")", compoundStatement).SetReduceFunction(
     (fun o -> Ast.FunctionDeclaration(unbox o.[0],
                                       unbox o.[1],
                                       None,
@@ -73,9 +82,9 @@ expressionStatement.AddProduction(";")
 compoundStatement.AddProduction("{", optionalStatementList, "}")
     .SetReduceFunction((fun o -> box (Option<Ast.LocalDeclarations>.None, unbox<Ast.Statement list> o.[1])))
 
-returnStatement.AddProduction("return", expression, ";")
+returnStatement.AddProduction(returnKeyword, expression, ";")
     .SetReduceFunction((fun o -> upcast Some(unbox<Ast.Expression> o.[1])))
-returnStatement.AddProduction("return", ";")
+returnStatement.AddProduction(returnKeyword, ";")
     .SetReduceFunction((fun o -> upcast None))
 
 typeSpec.AddProduction(voidKeyword).SetReduceFunction((fun o -> box Ast.Void))
