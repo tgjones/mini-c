@@ -33,6 +33,3 @@ expr			→ IDENT = expr | IDENT [ expr ] = expr
 
 arg_list		→ arg_list , expr | expr
 args			→ arg_list | ε
-
-Recursive descent version of expression grammar:
-TODO

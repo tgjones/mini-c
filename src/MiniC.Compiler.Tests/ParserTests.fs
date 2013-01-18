@@ -70,8 +70,8 @@ let ``can parse return expression statement``() =
         }"
     let expected =
         [Ast.FunctionDeclaration(
-            Ast.Void,
-            "main",
+            Ast.Int,
+            "foo",
             None,
             (None, [
                 Ast.ReturnStatement(

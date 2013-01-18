@@ -1,73 +1,91 @@
 ﻿module MiniC.Compiler.Parser
 
-open FParsec
+open Piglet.Parser
 open Ast
 
-let pIdentifier = (identifier (IdentifierOptions())) .>> spaces
+let configurator = ParserFactory.Configure<System.Object>()
 
-let pLParen = skipString "(" .>> spaces
-let pRParen = skipString ")" .>> spaces
+let program = configurator.CreateNonTerminal()
+let declarationList = configurator.CreateNonTerminal()
+let declaration = configurator.CreateNonTerminal()
+let functionDeclaration = configurator.CreateNonTerminal()
+let compoundStatement = configurator.CreateNonTerminal()
+let typeSpec = configurator.CreateNonTerminal()
+let parameters = configurator.CreateNonTerminal()
+let optionalStatementList = configurator.CreateNonTerminal()
+let statementList = configurator.CreateNonTerminal()
+let statement = configurator.CreateNonTerminal()
+let expressionStatement = configurator.CreateNonTerminal()
+let expression = configurator.CreateNonTerminal()
+let returnStatement = configurator.CreateNonTerminal()
 
-let pLCurly = skipString "{" .>> spaces
-let pRCurly = skipString "}" .>> spaces
+let plus = configurator.CreateTerminal(@"\+")
 
-let pSemicolon = skipString ";" .>> spaces
+let number = configurator.CreateTerminal(@"\d+", (fun s -> Ast.IntLiteral(System.Int32.Parse(s)) :> obj))
+let trueLiteral = configurator.CreateTerminal("true", (fun s -> box (Ast.BoolLiteral(true))))
+let falseLiteral = configurator.CreateTerminal("false", (fun s -> box (Ast.BoolLiteral(false))))
+let voidKeyword = configurator.CreateTerminal("void")
+let intKeyword = configurator.CreateTerminal("int", (fun s -> box Ast.Int))
+let returnKeyword = configurator.CreateTerminal("return")
+let identifier2 = configurator.CreateTerminal(@"\w+", (fun s -> s :> obj))
 
-let ws = spaces1
+program.AddProduction(declarationList).SetReduceToFirst()
+declarationList.AddProduction(declarationList, declaration).SetReduceFunction((fun o ->
+    let list = downcast o.[0]
+    (list :: downcast o.[1]) :> obj))
+declarationList.AddProduction(declaration).SetReduceFunction((fun o ->
+    box [unbox<Ast.Declaration> o.[0]]))
+declaration.AddProduction(functionDeclaration).SetReduceToFirst()
 
-let pCompoundStatement, pCompoundStatementRef = 
-    createParserForwardedToRef<CompoundStatement, unit>()
+expression.AddProduction(expression, plus, expression)
+    .SetReduceFunction((fun o ->
+        let o1 = downcast o.[0]
+        let o3 = downcast o.[2]
+        (Ast.BinaryExpression(o1, Ast.Add, o3)) :> obj))
+expression.AddProduction(number)
+    .SetReduceFunction((fun o -> upcast (Ast.LiteralExpression(downcast o.[0]))))
 
-let pBinaryOperator = (choice[skipString "+" >>% BinaryOperator.Add
-                              skipString "+" >>% BinaryOperator.Subtract]
-                       .>> spaces)
+functionDeclaration.AddProduction(typeSpec, identifier2, "(", parameters, ")", compoundStatement).SetReduceFunction(
+    (fun o -> Ast.FunctionDeclaration(unbox o.[0],
+                                      unbox o.[1],
+                                      None,
+                                      unbox o.[5]) :> obj))
 
-let pTypeSpec = (choice [skipString "void"  >>% TypeSpec.Void
-                         skipString "bool"  >>% TypeSpec.Bool
-                         skipString "int"   >>% TypeSpec.Int
-                         skipString "float" >>% TypeSpec.Float]
-                 .>> ws)
+optionalStatementList.AddProduction(statementList).SetReduceToFirst()
+optionalStatementList.AddProduction().SetReduceFunction((fun o -> box<Ast.Statement list> []))
 
-let pParameters = ((skipString "void") .>> spaces) >>% None
+statementList.AddProduction(statementList, statement).SetReduceFunction((fun o ->
+    let list = downcast o.[0]
+    (list :: downcast o.[1]) :> obj))
+statementList.AddProduction(statement).SetReduceFunction((fun o ->
+    box [unbox<Ast.Statement> o.[0]]))
 
-let pExpression, pExpressionRef =
-    createParserForwardedToRef<Expression, unit>()
+statement.AddProduction(expressionStatement)
+    .SetReduceFunction((fun o -> upcast Ast.ExpressionStatement(downcast o.[0])))
+statement.AddProduction(returnStatement)
+    .SetReduceFunction((fun o -> upcast Ast.ReturnStatement(downcast o.[0])))
 
-let pbool =     (stringReturn "true" true)
-            <|> (stringReturn "false" false)
+expressionStatement.AddProduction(expression, ";")
+    .SetReduceFunction((fun o -> upcast Ast.Expression(downcast o.[0])))
+expressionStatement.AddProduction(";")
+    .SetReduceFunction((fun o -> upcast Ast.Nop))
 
-let pExpressionP = choice[pbool |>> (fun x -> LiteralExpression(BoolLiteral(x)))
-                          pint32 |>> (fun x -> LiteralExpression(IntLiteral(x)))]
+compoundStatement.AddProduction("{", optionalStatementList, "}")
+    .SetReduceFunction((fun o -> box (Option<Ast.LocalDeclarations>.None, unbox<Ast.Statement list> o.[1])))
 
-do pExpressionRef := pipe3 pExpressionP pBinaryOperator pExpressionP
-                           (fun x y z -> BinaryExpression(x, y, z))
+returnStatement.AddProduction("return", expression, ";")
+    .SetReduceFunction((fun o -> upcast Some(unbox<Ast.Expression> o.[1])))
+returnStatement.AddProduction("return", ";")
+    .SetReduceFunction((fun o -> upcast None))
 
-let pExpressionStatement = choice [pSemicolon >>% Nop
-                                   (pExpression .>> pSemicolon) |>> Expression]
+typeSpec.AddProduction(voidKeyword).SetReduceFunction((fun o -> box Ast.Void))
+typeSpec.AddProduction(intKeyword).SetReduceToFirst()
 
-let pReturnStatement = skipString "return" >>. opt pExpression .>> pSemicolon
+parameters.AddProduction(voidKeyword).SetReduceFunction((fun o -> [] :> obj))
 
-let pStatement = choice [pExpressionStatement |>> (fun x -> ExpressionStatement(x))
-                         pCompoundStatement   |>> (fun x -> CompoundStatement(x))
-                         pReturnStatement     |>> (fun x -> ReturnStatement(x))]
+configurator.LeftAssociative(plus) |> ignore
 
-let pStatementList = many pStatement
+configurator.LexerSettings.Ignore <- [|@"\s+"|]
+let parser = configurator.CreateParser()
 
-do pCompoundStatementRef := (pLCurly >>. pStatementList .>> pRCurly)
-                            |>> (fun x -> (None, x))
-
-let pFunctionDeclaration = pipe4 pTypeSpec pIdentifier 
-                                 (pLParen >>. pParameters .>> pRParen) pCompoundStatement
-                                 (fun x y z w -> FunctionDeclaration(x, y, z, w))
-
-let pDeclaration = choice [pFunctionDeclaration]
-
-let pProgram = (spaces >>. (many1 pDeclaration)) .>> eof
-
-let parse s =
-    let result = run pProgram s
-    match result with
-    | Success(result, _, _) ->
-        result
-    | Failure(errorAsString, _, _) ->
-        failwith errorAsString
+let parse (s : string) = parser.Parse(s)
