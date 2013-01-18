@@ -5,15 +5,10 @@ open Ast
 
 let configurator = ParserFactory.Configure<System.Object>()
 
+// Non-terminals
+
 let nonTerminal = configurator.CreateNonTerminal
 
-let terminalParse regex f =
-    configurator.CreateTerminal(regex, new System.Func<string, obj>(f))
-
-let terminal regex =
-    configurator.CreateTerminal(regex)
-
-// Non-terminals
 let program               = nonTerminal()
 let declarationList       = nonTerminal()
 let declaration           = nonTerminal()
@@ -29,21 +24,55 @@ let expression            = nonTerminal()
 let returnStatement       = nonTerminal()
 
 // Terminals
+
+let terminalParse regex onParse =
+    configurator.CreateTerminal(regex, (fun s -> box (onParse s)))
+
+let terminal regex =
+    configurator.CreateTerminal(regex)
+
 let returnKeyword = terminal      "return"
 let voidKeyword   = terminal      "void"
-let plus          = terminalParse @"\+"    (fun s -> box s)
-let number        = terminalParse @"\d+"   (fun s -> box (Ast.IntLiteral(int32 s)))
-let trueLiteral   = terminalParse "true"   (fun s -> box (Ast.BoolLiteral(true)))
-let falseLiteral  = terminalParse "false"  (fun s -> box (Ast.BoolLiteral(false)))
-let intKeyword    = terminalParse "int"    (fun s -> box Ast.Int)
-let identifier    = terminalParse @"\w+"   (fun s -> box s)
+let plus          = terminalParse @"\+"    (fun s -> s)
+let number        = terminalParse @"\d+"   (fun s -> Ast.IntLiteral(int32 s))
+let trueLiteral   = terminalParse "true"   (fun s -> Ast.BoolLiteral(true))
+let falseLiteral  = terminalParse "false"  (fun s -> Ast.BoolLiteral(false))
+let intKeyword    = terminalParse "int"    (fun s -> Ast.Int)
+let identifier    = terminalParse @"\w+"   (fun s -> s)
 
-program.AddProduction(declarationList).SetReduceToFirst()
-declarationList.AddProduction(declarationList, declaration).SetReduceFunction((fun o ->
-    let list = downcast o.[0]
-    (list :: downcast o.[1]) :> obj))
-declarationList.AddProduction(declaration).SetReduceFunction((fun o ->
-    box [unbox<Ast.Declaration> o.[0]]))
+// Productions
+
+let addProduction (part : Configuration.ISymbol<'b>)
+                  (nonTerminal : Configuration.INonTerminal<'a>) =
+    nonTerminal.AddProduction(part)
+
+let addProduction2 (part1 : Configuration.ISymbol<_>)
+                   (part2 : Configuration.ISymbol<_>)
+                   (nonTerminal : Configuration.INonTerminal<_>) =
+    nonTerminal.AddProduction(part1, part2)
+
+let reduceFunction<'T,'U> (f : ('T -> 'V))
+                          (production : Configuration.IProduction<_>) =
+    production.SetReduceFunction (fun o -> box (f (unbox o.[0])))
+
+let reduceFunction2<'T,'U,'V> (f : ('T -> 'U -> 'V))
+                              (production : Configuration.IProduction<_>) =
+    production.SetReduceFunction (fun o -> box (f (unbox o.[0]) (unbox o.[1])))
+
+let reduceToFirst (production : Configuration.IProduction<_>) =
+    production.SetReduceToFirst()
+
+program
+    |> addProduction declarationList
+    |> reduceToFirst
+
+declarationList
+    |> addProduction2 declarationList declaration
+    |> reduceFunction2<Declaration list, Declaration, Declaration list> (fun x y -> x @ [y])
+declarationList
+    |> addProduction declaration
+    |> reduceFunction<Declaration, Declaration list> (fun x -> [x])
+
 declaration.AddProduction(functionDeclaration).SetReduceToFirst()
 
 expression.AddProduction(expression, plus, expression)
