@@ -25,11 +25,7 @@ type CodeGenerator(assemblyBuilder : AssemblyBuilder, typeBuilder : TypeBuilder)
         
         methodBuilder.SetReturnType (getType returnType)
         
-        let parameterTypes =
-            match parameters with
-            | Some(parameters) -> List.map getParameterType parameters
-            | None -> List.empty
-
+        let parameterTypes = List.map getParameterType parameters
         methodBuilder.SetParameters (List.toArray parameterTypes)
 
         let ilGenerator = methodBuilder.GetILGenerator()

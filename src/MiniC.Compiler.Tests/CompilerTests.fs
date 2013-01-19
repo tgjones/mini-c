@@ -8,9 +8,7 @@ open MiniC.Compiler
 let ``can generate and run .NET assembly``() =
     let parseTree =
         [Ast.FunctionDeclaration(
-            Ast.Int,
-            "main",
-            None,
+            Ast.Int, "main", [],
             (None, [
                 Ast.ReturnStatement(
                     Some(Ast.LiteralExpression(Ast.IntLiteral(123)))

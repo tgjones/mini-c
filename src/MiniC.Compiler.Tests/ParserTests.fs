@@ -7,14 +7,14 @@ open MiniC.Compiler
 let ``can parse empty main method``() =
     let result = Parser.parse "void main(void) { }"
     let expected =
-        [Ast.FunctionDeclaration(Ast.Void, "main", None, (None, [])) ]
+        [Ast.FunctionDeclaration(Ast.Void, "main", [], (None, [])) ]
     Assert.That(result, Is.EqualTo(expected))
 
 [<Test>]
 let ``can parse empty main method with random whitespace``() =
     let result = Parser.parse "   void  main (  void ) {   }   "
     let expected =
-        [Ast.FunctionDeclaration(Ast.Void, "main", None, (None, [])) ]
+        [Ast.FunctionDeclaration(Ast.Void, "main", [], (None, [])) ]
     Assert.That(result, Is.EqualTo(expected))
 
 [<Test>]
@@ -24,7 +24,7 @@ let ``can parse nearly-empty main method``() =
             ;
         }"
     let expected =
-        [Ast.FunctionDeclaration(Ast.Void, "main", None, (None, [Ast.ExpressionStatement(Ast.Nop)])) ]
+        [Ast.FunctionDeclaration(Ast.Void, "main", [], (None, [Ast.ExpressionStatement(Ast.Nop)])) ]
     Assert.That(result, Is.EqualTo(expected))
 
 [<Test>]
@@ -35,9 +35,7 @@ let ``can parse binary expression``() =
         }"
     let expected =
         [Ast.FunctionDeclaration(
-            Ast.Void,
-            "main",
-            None,
+            Ast.Void, "main", [],
             (None, [
                 Ast.ExpressionStatement(
                     Ast.Expression(
@@ -59,7 +57,7 @@ let ``can parse return void statement``() =
             return;
         }"
     let expected =
-        [Ast.FunctionDeclaration(Ast.Void, "main", None, (None, [Ast.ReturnStatement(None)])) ]
+        [Ast.FunctionDeclaration(Ast.Void, "main", [], (None, [Ast.ReturnStatement(None)])) ]
     Assert.That(result, Is.EqualTo(expected))
 
 [<Test>]
@@ -70,9 +68,7 @@ let ``can parse return expression statement``() =
         }"
     let expected =
         [Ast.FunctionDeclaration(
-            Ast.Int,
-            "foo",
-            None,
+            Ast.Int, "foo", [],
             (None, [
                 Ast.ReturnStatement(
                     Some(Ast.LiteralExpression(Ast.IntLiteral(123)))
@@ -91,7 +87,7 @@ let ``can parse parameters and expression``() =
         [Ast.FunctionDeclaration(
             Ast.Int,
             "foo",
-            Some([Ast.ScalarParameter (Ast.Int, "a")]),
+            [Ast.ScalarParameter (Ast.Int, "a")],
             (None, [
                 Ast.ReturnStatement(
                     Some(

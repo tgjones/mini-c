@@ -4,7 +4,7 @@ type Program = Declaration list
 
 and Declaration =
     | VariableDeclaration
-    | FunctionDeclaration of TypeSpec * Identifier * Parameters option * CompoundStatement
+    | FunctionDeclaration of TypeSpec * Identifier * Parameters * CompoundStatement
 
 and TypeSpec =
     | Void
