@@ -3,125 +3,166 @@
 open Piglet.Parser
 open Ast
 
-let configurator = ParserFactory.Configure<System.Object>()
+type ProductionWrapperBase (production : Configuration.IProduction<obj>) =
+    member x.Production = production
+    member x.SetReduceToFirst () = production.SetReduceToFirst()
+
+type ProductionWrapper<'T> (production : Configuration.IProduction<obj>) =
+    inherit ProductionWrapperBase(production)
+    member x.SetReduceFunction (f : (unit -> 'T)) =
+        production.SetReduceFunction (fun o -> box (f ()))
+
+type ProductionWrapper<'T,'U> (production : Configuration.IProduction<obj>) =
+    inherit ProductionWrapperBase(production)
+    member x.SetReduceFunction (f : ('T -> 'U)) =
+        production.SetReduceFunction (fun o -> box (f (unbox o.[0])))
+
+type ProductionWrapper<'T,'U,'V> (production : Configuration.IProduction<obj>) =
+    inherit ProductionWrapperBase(production)
+    member x.SetReduceFunction (f : ('T -> 'U -> 'V)) =
+        production.SetReduceFunction (fun o -> box (f (unbox o.[0]) (unbox o.[1])))
+
+type ProductionWrapper<'T,'U,'V,'W> (production : Configuration.IProduction<obj>) =
+    inherit ProductionWrapperBase(production)
+    member x.SetReduceFunction (f : ('T -> 'U -> 'V -> 'W)) =
+        production.SetReduceFunction (fun o -> box (f (unbox o.[0])
+                                                      (unbox o.[1])
+                                                      (unbox o.[2])))
+
+type ProductionWrapper<'T,'U,'V,'W,'X,'Y,'Z> (production : Configuration.IProduction<obj>) =
+    inherit ProductionWrapperBase(production)
+    member x.SetReduceFunction (f : ('T -> 'U -> 'V -> 'W -> 'X -> 'Y -> 'Z)) =
+        production.SetReduceFunction (fun o -> box (f (unbox o.[0])
+                                                      (unbox o.[1])
+                                                      (unbox o.[2])
+                                                      (unbox o.[3])
+                                                      (unbox o.[4])
+                                                      (unbox o.[5])))
+
+type SymbolWrapper<'T> (symbol : Configuration.ISymbol<obj>) =
+    member x.Symbol = symbol
+
+type TerminalWrapper<'T> (terminal : Configuration.ITerminal<obj>) =
+    inherit SymbolWrapper<'T>(terminal)
+
+type NonTerminalWrapper<'T> (nonTerminal : Configuration.INonTerminal<obj>) =
+    inherit SymbolWrapper<'T>(nonTerminal)
+
+    member x.AddProduction () =
+        let production = nonTerminal.AddProduction()
+        new ProductionWrapper<'T>(production)
+    
+    member x.AddProduction((part : SymbolWrapper<'U>)) =
+        let production = nonTerminal.AddProduction(part.Symbol)
+        new ProductionWrapper<'U,'T>(production)
+    
+    member x.AddProduction((part1 : SymbolWrapper<'U>), (part2 : SymbolWrapper<'V>)) =
+        let production = nonTerminal.AddProduction(part1.Symbol, part2.Symbol)
+        new ProductionWrapper<'U,'V,'T>(production)
+
+    member x.AddProduction((part1 : SymbolWrapper<'U>),
+                           (part2 : SymbolWrapper<'V>),
+                           (part3 : SymbolWrapper<'W>)) =
+        let production = nonTerminal.AddProduction(part1.Symbol,
+                                                   part2.Symbol,
+                                                   part3.Symbol)
+        new ProductionWrapper<'U,'V,'W,'T>(production)
+
+    member x.AddProduction((part1 : SymbolWrapper<'U>),
+                           (part2 : SymbolWrapper<'V>),
+                           (part3 : SymbolWrapper<'W>),
+                           (part4 : SymbolWrapper<'X>),
+                           (part5 : SymbolWrapper<'Y>),
+                           (part6 : SymbolWrapper<'Z>)) =
+        let production = nonTerminal.AddProduction(part1.Symbol,
+                                                   part2.Symbol,
+                                                   part3.Symbol,
+                                                   part4.Symbol,
+                                                   part5.Symbol,
+                                                   part6.Symbol)
+        new ProductionWrapper<'U,'V,'W,'X,'Y,'Z,'T>(production)
+
+let configurator = ParserFactory.Configure<obj>()
 
 // Non-terminals
 
-let nonTerminal = configurator.CreateNonTerminal
+let nonTerminal<'T> () = new NonTerminalWrapper<'T>(configurator.CreateNonTerminal())
 
-let program               = nonTerminal()
-let declarationList       = nonTerminal()
-let declaration           = nonTerminal()
-let functionDeclaration   = nonTerminal()
-let compoundStatement     = nonTerminal()
-let typeSpec              = nonTerminal()
-let parameters            = nonTerminal()
-let optionalStatementList = nonTerminal()
-let statementList         = nonTerminal()
-let statement             = nonTerminal()
-let expressionStatement   = nonTerminal()
-let expression            = nonTerminal()
-let returnStatement       = nonTerminal()
+let program               = nonTerminal<Program>()
+let declarationList       = nonTerminal<Declaration list>()
+let declaration           = nonTerminal<Declaration>()
+let functionDeclaration   = nonTerminal<Declaration>()
+let compoundStatement     = nonTerminal<CompoundStatement>()
+let typeSpec              = nonTerminal<TypeSpec>()
+let parameters            = nonTerminal<Parameters>()
+let optionalStatementList = nonTerminal<Statement list>()
+let statementList         = nonTerminal<Statement list>()
+let statement             = nonTerminal<Statement>()
+let expressionStatement   = nonTerminal<ExpressionStatement>()
+let expression            = nonTerminal<Expression>()
+let returnStatement       = nonTerminal<Expression option>()
 
 // Terminals
 
-let terminalParse regex onParse =
-    configurator.CreateTerminal(regex, (fun s -> box (onParse s)))
+let terminalParse<'T> regex (onParse : (string -> 'T)) =
+    new TerminalWrapper<'T>(configurator.CreateTerminal(regex, (fun s -> box (onParse s))))
 
 let terminal regex =
-    configurator.CreateTerminal(regex)
+    new TerminalWrapper<string>(configurator.CreateTerminal(regex))
 
 let returnKeyword = terminal      "return"
 let voidKeyword   = terminal      "void"
-let plus          = terminalParse @"\+"    (fun s -> s)
-let number        = terminalParse @"\d+"   (fun s -> Ast.IntLiteral(int32 s))
-let trueLiteral   = terminalParse "true"   (fun s -> Ast.BoolLiteral(true))
-let falseLiteral  = terminalParse "false"  (fun s -> Ast.BoolLiteral(false))
-let intKeyword    = terminalParse "int"    (fun s -> Ast.Int)
-let identifier    = terminalParse @"\w+"   (fun s -> s)
+let plus          = terminalParse @"\+"   (fun s -> s)
+let number        = terminalParse @"\d+"  (fun s -> Ast.IntLiteral(int32 s))
+let trueLiteral   = terminalParse "true"  (fun s -> Ast.BoolLiteral(true))
+let falseLiteral  = terminalParse "false" (fun s -> Ast.BoolLiteral(false))
+let intKeyword    = terminalParse "int"   (fun s -> Ast.Int)
+let identifier    = terminalParse @"\w+"  (fun s -> s)
+let openParen     = terminal      @"\("
+let closeParen    = terminal      @"\)"
+let openCurly     = terminal      @"\{"
+let closeCurly    = terminal      @"\}"
+let semicolon     = terminal      ";"
 
 // Productions
 
-let addProduction (part : Configuration.ISymbol<'b>)
-                  (nonTerminal : Configuration.INonTerminal<'a>) =
-    nonTerminal.AddProduction(part)
+program.AddProduction(declarationList).SetReduceToFirst()
 
-let addProduction2 (part1 : Configuration.ISymbol<_>)
-                   (part2 : Configuration.ISymbol<_>)
-                   (nonTerminal : Configuration.INonTerminal<_>) =
-    nonTerminal.AddProduction(part1, part2)
-
-let reduceFunction<'T,'U> (f : ('T -> 'V))
-                          (production : Configuration.IProduction<_>) =
-    production.SetReduceFunction (fun o -> box (f (unbox o.[0])))
-
-let reduceFunction2<'T,'U,'V> (f : ('T -> 'U -> 'V))
-                              (production : Configuration.IProduction<_>) =
-    production.SetReduceFunction (fun o -> box (f (unbox o.[0]) (unbox o.[1])))
-
-let reduceToFirst (production : Configuration.IProduction<_>) =
-    production.SetReduceToFirst()
-
-program
-    |> addProduction declarationList
-    |> reduceToFirst
-
-declarationList
-    |> addProduction2 declarationList declaration
-    |> reduceFunction2<Declaration list, Declaration, Declaration list> (fun x y -> x @ [y])
-declarationList
-    |> addProduction declaration
-    |> reduceFunction<Declaration, Declaration list> (fun x -> [x])
+declarationList.AddProduction(declarationList, declaration).SetReduceFunction (fun x y -> x @ [y])
+declarationList.AddProduction(declaration).SetReduceFunction (fun x -> [x])
 
 declaration.AddProduction(functionDeclaration).SetReduceToFirst()
 
-expression.AddProduction(expression, plus, expression)
-    .SetReduceFunction((fun o ->
-        let o1 = downcast o.[0]
-        let o3 = downcast o.[2]
-        (Ast.BinaryExpression(o1, Ast.Add, o3)) :> obj))
-expression.AddProduction(number)
-    .SetReduceFunction((fun o -> upcast (Ast.LiteralExpression(downcast o.[0]))))
+expression.AddProduction(expression, plus, expression).SetReduceFunction (fun x y z -> Ast.BinaryExpression(x, Ast.Add, z))
+expression.AddProduction(number).SetReduceFunction (fun x -> Ast.LiteralExpression x)
 
-functionDeclaration.AddProduction(typeSpec, identifier, "(", parameters, ")", compoundStatement).SetReduceFunction(
-    (fun o -> Ast.FunctionDeclaration(unbox o.[0],
-                                      unbox o.[1],
-                                      None,
-                                      unbox o.[5]) :> obj))
+functionDeclaration.AddProduction(typeSpec, identifier, openParen, parameters, closeParen, compoundStatement)
+    .SetReduceFunction (fun u v w x y z -> Ast.FunctionDeclaration(u, v, None, z))
 
 optionalStatementList.AddProduction(statementList).SetReduceToFirst()
-optionalStatementList.AddProduction().SetReduceFunction((fun o -> box<Ast.Statement list> []))
+optionalStatementList.AddProduction().SetReduceFunction (fun () -> [])
 
-statementList.AddProduction(statementList, statement).SetReduceFunction((fun o ->
-    let list = downcast o.[0]
-    (list :: downcast o.[1]) :> obj))
-statementList.AddProduction(statement).SetReduceFunction((fun o ->
-    box [unbox<Ast.Statement> o.[0]]))
+statementList.AddProduction(statementList, statement).SetReduceFunction (fun x y -> x @ [y])
+statementList.AddProduction(statement)               .SetReduceFunction (fun x -> [x])
 
-statement.AddProduction(expressionStatement)
-    .SetReduceFunction((fun o -> upcast Ast.ExpressionStatement(downcast o.[0])))
-statement.AddProduction(returnStatement)
-    .SetReduceFunction((fun o -> upcast Ast.ReturnStatement(downcast o.[0])))
+statement.AddProduction(expressionStatement).SetReduceFunction (fun x -> Ast.ExpressionStatement x)
+statement.AddProduction(returnStatement)    .SetReduceFunction (fun x -> Ast.ReturnStatement x)
 
-expressionStatement.AddProduction(expression, ";")
-    .SetReduceFunction((fun o -> upcast Ast.Expression(downcast o.[0])))
-expressionStatement.AddProduction(";")
-    .SetReduceFunction((fun o -> upcast Ast.Nop))
+expressionStatement.AddProduction(expression, semicolon).SetReduceFunction (fun x y -> Ast.Expression x)
+expressionStatement.AddProduction(semicolon)            .SetReduceFunction (fun x -> Ast.Nop)
 
-compoundStatement.AddProduction("{", optionalStatementList, "}")
-    .SetReduceFunction((fun o -> box (Option<Ast.LocalDeclarations>.None, unbox<Ast.Statement list> o.[1])))
+compoundStatement.AddProduction(openCurly, optionalStatementList, closeCurly)
+    .SetReduceFunction (fun x y z -> (None, y))
 
-returnStatement.AddProduction(returnKeyword, expression, ";")
-    .SetReduceFunction((fun o -> upcast Some(unbox<Ast.Expression> o.[1])))
-returnStatement.AddProduction(returnKeyword, ";")
-    .SetReduceFunction((fun o -> upcast None))
+returnStatement.AddProduction(returnKeyword, expression, semicolon).SetReduceFunction (fun x y z -> Some y)
+returnStatement.AddProduction(returnKeyword, semicolon)            .SetReduceFunction (fun x y -> None)
 
-typeSpec.AddProduction(voidKeyword).SetReduceFunction((fun o -> box Ast.Void))
+typeSpec.AddProduction(voidKeyword).SetReduceFunction (fun x -> Ast.Void)
 typeSpec.AddProduction(intKeyword).SetReduceToFirst()
 
-parameters.AddProduction(voidKeyword).SetReduceFunction((fun o -> [] :> obj))
+parameters.AddProduction(voidKeyword).SetReduceFunction (fun o -> [])
 
-configurator.LeftAssociative(plus) |> ignore
+configurator.LeftAssociative(downcast plus.Symbol) |> ignore
 
 configurator.LexerSettings.Ignore <- [|@"\s+"|]
 let parser = configurator.CreateParser()
