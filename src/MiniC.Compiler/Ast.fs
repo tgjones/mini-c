@@ -40,6 +40,7 @@ and LocalDeclaration =
 and Expression =
     | BinaryExpression of Expression * BinaryOperator * Expression
     | UnaryExpression of UnaryOperator * Expression
+    | IdentifierExpression of Identifier
     | LiteralExpression of Literal
 
 and BinaryOperator =

@@ -80,3 +80,32 @@ let ``can parse return expression statement``() =
             ])
         )]
     Assert.That(result, Is.EqualTo(expected))
+
+[<Test>]
+let ``can parse parameters and expression``() =
+    let result = Parser.parse "
+        int foo(int a) {
+            return a*123 + 456;
+        }"
+    let expected =
+        [Ast.FunctionDeclaration(
+            Ast.Int,
+            "foo",
+            Some([Ast.ScalarParameter (Ast.Int, "a")]),
+            (None, [
+                Ast.ReturnStatement(
+                    Some(
+                        Ast.BinaryExpression(
+                            Ast.BinaryExpression(
+                                Ast.IdentifierExpression("a"),
+                                Ast.Multiply,
+                                Ast.LiteralExpression(Ast.IntLiteral(123))
+                            ),
+                            Ast.Add,
+                            Ast.LiteralExpression(Ast.IntLiteral(456))
+                        )
+                    )
+                )
+            ])
+        )]
+    Assert.That(result, Is.EqualTo(expected))
