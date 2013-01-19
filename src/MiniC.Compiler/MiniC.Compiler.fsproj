@@ -40,6 +40,7 @@
     <Compile Include="Ast.fs" />
     <Compile Include="ParsingUtilities.fs" />
     <Compile Include="Parser.fs" />
+    <Compile Include="Compiler.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
