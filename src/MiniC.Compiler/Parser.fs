@@ -24,6 +24,7 @@ let statementList         = nonTerminal<Statement list>()
 let statement             = nonTerminal<Statement>()
 let expressionStatement   = nonTerminal<ExpressionStatement>()
 let expression            = nonTerminal<Expression>()
+let ifStatement           = nonTerminal<IfStatement>()
 let returnStatement       = nonTerminal<Expression option>()
 
 // Terminals
@@ -34,6 +35,8 @@ let terminalParse<'T> regex (onParse : (string -> 'T)) =
 let terminal regex =
     new TerminalWrapper<string>(configurator.CreateTerminal(regex))
 
+let ifKeyword     = terminal      "if"
+let elseKeyword   = terminal      "else"
 let returnKeyword = terminal      "return"
 let voidKeyword   = terminal      "void"
 let plus          = terminal      @"\+"
@@ -41,6 +44,7 @@ let asterisk      = terminal      @"\*"
 let number        = terminalParse @"\d+"  (fun s -> Ast.IntLiteral(int32 s))
 let trueLiteral   = terminalParse "true"  (fun s -> Ast.BoolLiteral(true))
 let falseLiteral  = terminalParse "false" (fun s -> Ast.BoolLiteral(false))
+let boolKeyword   = terminalParse "bool"  (fun s -> Ast.Bool)
 let intKeyword    = terminalParse "int"   (fun s -> Ast.Int)
 let identifier    = terminalParse @"\w+"  (fun s -> s)
 let openParen     = terminal      @"\("
@@ -48,6 +52,7 @@ let closeParen    = terminal      @"\)"
 let openCurly     = terminal      @"\{"
 let closeCurly    = terminal      @"\}"
 let semicolon     = terminal      ";"
+let comma         = terminal      ","
 
 // Productions
 
@@ -59,6 +64,7 @@ declarationList.AddProduction(declaration).SetReduceFunction (fun x -> [x])
 declaration.AddProduction(functionDeclaration).SetReduceToFirst()
 
 typeSpec.AddProduction(voidKeyword).SetReduceFunction (fun x -> Ast.Void)
+typeSpec.AddProduction(boolKeyword).SetReduceToFirst()
 typeSpec.AddProduction(intKeyword).SetReduceToFirst()
 
 functionDeclaration.AddProduction(typeSpec, identifier, openParen, parameters, closeParen, compoundStatement)
@@ -67,8 +73,8 @@ functionDeclaration.AddProduction(typeSpec, identifier, openParen, parameters, c
 parameters.AddProduction(parameterList).SetReduceToFirst()
 parameters.AddProduction(voidKeyword).SetReduceFunction (fun x -> [])
 
-parameterList.AddProduction(parameterList, parameter).SetReduceFunction (fun x y -> x @ [y])
-parameterList.AddProduction(parameter)               .SetReduceFunction (fun x -> [x])
+parameterList.AddProduction(parameterList, comma, parameter).SetReduceFunction (fun x y z -> x @ [z])
+parameterList.AddProduction(parameter)                      .SetReduceFunction (fun x -> [x])
 
 parameter.AddProduction(typeSpec, identifier).SetReduceFunction (fun x y -> Ast.ScalarParameter(x, y))
 
@@ -79,6 +85,7 @@ statementList.AddProduction(statementList, statement).SetReduceFunction (fun x y
 statementList.AddProduction(statement)               .SetReduceFunction (fun x -> [x])
 
 statement.AddProduction(expressionStatement).SetReduceFunction (fun x -> Ast.ExpressionStatement x)
+statement.AddProduction(ifStatement)        .SetReduceFunction (fun x -> Ast.IfStatement x)
 statement.AddProduction(returnStatement)    .SetReduceFunction (fun x -> Ast.ReturnStatement x)
 
 expressionStatement.AddProduction(expression, semicolon).SetReduceFunction (fun x y -> Ast.Expression x)
@@ -86,6 +93,9 @@ expressionStatement.AddProduction(semicolon)            .SetReduceFunction (fun 
 
 compoundStatement.AddProduction(openCurly, optionalStatementList, closeCurly)
     .SetReduceFunction (fun x y z -> (None, y))
+
+ifStatement.AddProduction(ifKeyword, openParen, expression, closeParen, statement)
+    .SetReduceFunction (fun u v w x y -> (w, y, None))
 
 returnStatement.AddProduction(returnKeyword, expression, semicolon).SetReduceFunction (fun x y z -> Some y)
 returnStatement.AddProduction(returnKeyword, semicolon)            .SetReduceFunction (fun x y -> None)

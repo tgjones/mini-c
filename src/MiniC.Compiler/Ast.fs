@@ -21,8 +21,9 @@ and Parameter =
     | ArrayParameter of TypeSpec * Identifier
 
 and Statement =
-    | CompoundStatement of CompoundStatement
     | ExpressionStatement of ExpressionStatement
+    | CompoundStatement of CompoundStatement
+    | IfStatement of IfStatement
     | ReturnStatement of Expression option
 
 and ExpressionStatement =
@@ -36,6 +37,8 @@ and LocalDeclarations = LocalDeclaration list
 and LocalDeclaration =
     | ScalarDeclaration of TypeSpec * Identifier
     | ArrayDeclaration of TypeSpec * Identifier
+
+and IfStatement = Expression (* condition *) * Statement (* then *) * Statement option (* else *)
 
 and Expression =
     | BinaryExpression of Expression * BinaryOperator * Expression

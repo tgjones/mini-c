@@ -29,6 +29,15 @@ type ProductionWrapper<'T,'U,'V,'W> (production : IProduction<obj>) =
                                                       (unbox o.[1])
                                                       (unbox o.[2])))
 
+type ProductionWrapper<'T,'U,'V,'W,'X,'Y> (production : IProduction<obj>) =
+    inherit ProductionWrapperBase(production)
+    member x.SetReduceFunction (f : ('T -> 'U -> 'V -> 'W -> 'X -> 'Y)) =
+        production.SetReduceFunction (fun o -> box (f (unbox o.[0])
+                                                      (unbox o.[1])
+                                                      (unbox o.[2])
+                                                      (unbox o.[3])
+                                                      (unbox o.[4])))
+
 type ProductionWrapper<'T,'U,'V,'W,'X,'Y,'Z> (production : IProduction<obj>) =
     inherit ProductionWrapperBase(production)
     member x.SetReduceFunction (f : ('T -> 'U -> 'V -> 'W -> 'X -> 'Y -> 'Z)) =
@@ -67,6 +76,18 @@ type NonTerminalWrapper<'T> (nonTerminal : INonTerminal<obj>) =
                                                    part2.Symbol,
                                                    part3.Symbol)
         new ProductionWrapper<'U,'V,'W,'T>(production)
+
+    member x.AddProduction((part1 : SymbolWrapper<'U>),
+                           (part2 : SymbolWrapper<'V>),
+                           (part3 : SymbolWrapper<'W>),
+                           (part4 : SymbolWrapper<'X>),
+                           (part5 : SymbolWrapper<'Y>)) =
+        let production = nonTerminal.AddProduction(part1.Symbol,
+                                                   part2.Symbol,
+                                                   part3.Symbol,
+                                                   part4.Symbol,
+                                                   part5.Symbol)
+        new ProductionWrapper<'U,'V,'W,'X,'Y,'T>(production)
 
     member x.AddProduction((part1 : SymbolWrapper<'U>),
                            (part2 : SymbolWrapper<'V>),

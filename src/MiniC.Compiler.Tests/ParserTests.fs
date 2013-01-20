@@ -85,8 +85,7 @@ let ``can parse parameters and expression``() =
         }"
     let expected =
         [Ast.FunctionDeclaration(
-            Ast.Int,
-            "foo",
+            Ast.Int, "foo",
             [Ast.ScalarParameter (Ast.Int, "a")],
             (None, [
                 Ast.ReturnStatement(
@@ -99,6 +98,41 @@ let ``can parse parameters and expression``() =
                             ),
                             Ast.Add,
                             Ast.LiteralExpression(Ast.IntLiteral(456))
+                        )
+                    )
+                )
+            ])
+        )]
+    Assert.That(result, Is.EqualTo(expected))
+
+[<Test>]
+let ``can parse if statement``() =
+    let result = Parser.parse "
+        int bar(int a, bool b) {
+            if (b)
+                return a;
+            return 1234*a;
+        }"
+    let expected =
+        [Ast.FunctionDeclaration(
+            Ast.Int,
+            "bar",
+            [
+                Ast.ScalarParameter (Ast.Int, "a")
+                Ast.ScalarParameter (Ast.Bool, "b")
+            ],
+            (None, [
+                Ast.IfStatement(
+                    Ast.IdentifierExpression "b",
+                    Ast.ReturnStatement(Some(Ast.IdentifierExpression "a")),
+                    None
+                )
+                Ast.ReturnStatement(
+                    Some(
+                        Ast.BinaryExpression(
+                            Ast.LiteralExpression(Ast.IntLiteral(1234)),
+                            Ast.Multiply,
+                            Ast.IdentifierExpression("a")
                         )
                     )
                 )
