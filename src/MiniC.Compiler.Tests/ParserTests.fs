@@ -139,3 +139,47 @@ let ``can parse if statement``() =
             ])
         )]
     Assert.That(result, Is.EqualTo(expected))
+    
+[<Test>]
+let ``can parse complex arithmetic expression``() =
+    let result = Parser.parse "
+        int z;
+
+        int baz(int a, int b) { 
+            return 1234*z % 456/b + 789;
+        }"
+    let expected =
+        [
+            Ast.VariableDeclaration(Ast.ScalarVariableDeclaration(Ast.Int, "z"))
+            Ast.FunctionDeclaration(
+                Ast.Int, "baz",
+                [
+                    Ast.ScalarParameter (Ast.Int, "a")
+                    Ast.ScalarParameter (Ast.Int, "b")
+                ],
+                (None, [
+                    Ast.ReturnStatement(
+                        Some(
+                            Ast.BinaryExpression(
+                                Ast.BinaryExpression(
+                                    Ast.BinaryExpression(
+                                        Ast.BinaryExpression(
+                                            Ast.LiteralExpression(Ast.IntLiteral(1234)),
+                                            Ast.Multiply,
+                                            Ast.IdentifierExpression("z")
+                                        ),
+                                        Ast.Modulus,
+                                        Ast.LiteralExpression(Ast.IntLiteral(456))
+                                    ),
+                                    Ast.Divide,
+                                    Ast.IdentifierExpression("b")
+                                ),
+                                Ast.Add,
+                                Ast.LiteralExpression(Ast.IntLiteral(789))
+                            )
+                        )
+                    )
+                ])
+            )
+        ]
+    Assert.That(result, Is.EqualTo(expected))

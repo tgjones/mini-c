@@ -66,7 +66,10 @@ type CodeGenerator(assemblyBuilder : AssemblyBuilder, typeBuilder : TypeBuilder)
     let generateDeclaration = 
         function
         | FunctionDeclaration(x, y, z, w) -> generateFunctionDeclaration (x, y, z, w)
-        | VariableDeclaration -> ()
+        | VariableDeclaration(x) ->
+            match x with
+            | ScalarVariableDeclaration(typeSpec, identifier) -> ()
+            | ArrayVariableDeclaration(typeSpec, identifier) -> ()
 
     member x.Generate (program : Program) =
         List.iter generateDeclaration program

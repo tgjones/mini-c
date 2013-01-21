@@ -3,14 +3,20 @@
 type Program = Declaration list
 
 and Declaration =
-    | VariableDeclaration
-    | FunctionDeclaration of TypeSpec * Identifier * Parameters * CompoundStatement
+    | VariableDeclaration of VariableDeclaration
+    | FunctionDeclaration of FunctionDeclaration
 
 and TypeSpec =
     | Void
     | Bool
     | Int
     | Float
+
+and VariableDeclaration = 
+    | ScalarVariableDeclaration of TypeSpec * Identifier
+    | ArrayVariableDeclaration of TypeSpec * Identifier
+
+and FunctionDeclaration = TypeSpec * Identifier * Parameters * CompoundStatement
 
 and Identifier = string
 
@@ -35,8 +41,8 @@ and CompoundStatement = LocalDeclarations option * Statement list
 and LocalDeclarations = LocalDeclaration list
 
 and LocalDeclaration =
-    | ScalarDeclaration of TypeSpec * Identifier
-    | ArrayDeclaration of TypeSpec * Identifier
+    | ScalarLocalDeclaration of TypeSpec * Identifier
+    | ArrayLocalDeclaration of TypeSpec * Identifier
 
 and IfStatement = Expression (* condition *) * Statement (* then *) * Statement option (* else *)
 
