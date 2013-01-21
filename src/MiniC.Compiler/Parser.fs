@@ -24,6 +24,7 @@ let optionalStatementList = nonTerminal<Statement list>()
 let statementList         = nonTerminal<Statement list>()
 let statement             = nonTerminal<Statement>()
 let expressionStatement   = nonTerminal<ExpressionStatement>()
+let whileStatement        = nonTerminal<WhileStatement>()
 let ifStatement           = nonTerminal<IfStatement>()
 let optionalElseStatement = nonTerminal<Statement option>()
 let returnStatement       = nonTerminal<Expression option>()
@@ -41,6 +42,7 @@ let terminal regex =
 
 let ifKeyword     = terminal      "if"
 let elseKeyword   = terminal      "else"
+let whileKeyword  = terminal      "while"
 let returnKeyword = terminal      "return"
 let voidKeyword   = terminal      "void"
 let plus          = terminal      @"\+"
@@ -110,6 +112,7 @@ statementList.AddProduction(statement)               .SetReduceFunction (fun a -
 
 statement.AddProduction(expressionStatement).SetReduceFunction (fun a -> Ast.ExpressionStatement a)
 statement.AddProduction(ifStatement)        .SetReduceFunction (fun a -> Ast.IfStatement a)
+statement.AddProduction(whileStatement)     .SetReduceFunction (fun a -> Ast.WhileStatement a)
 statement.AddProduction(returnStatement)    .SetReduceFunction (fun a -> Ast.ReturnStatement a)
 
 expressionStatement.AddProduction(expression, semicolon).SetReduceFunction (fun a _ -> Ast.Expression a)
@@ -117,6 +120,9 @@ expressionStatement.AddProduction(semicolon)            .SetReduceFunction (fun 
 
 compoundStatement.AddProduction(openCurly, optionalStatementList, closeCurly)
     .SetReduceFunction (fun _ b _ -> (None, b))
+
+whileStatement.AddProduction(whileKeyword, openParen, expression, closeParen, statement)
+    .SetReduceFunction (fun a b c d e -> (c, e))
 
 ifStatement.AddProduction(ifKeyword, openParen, expression, closeParen, statement, optionalElseStatement)
     .SetReduceFunction (fun _ _ c _ e f -> (c, e, f))
