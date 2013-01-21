@@ -216,3 +216,30 @@ let ``can parse logical negation and unary subtraction expression``() =
             ])
         )]
     Assert.That(result, Is.EqualTo(expected))
+
+[<Test>]
+let ``can parse if / else statement``() =
+    let result = Parser.parse "
+        int main(int a, bool b) {
+            if (b)
+                return a;
+            else
+                return 1;
+        }"
+    let expected =
+        [Ast.FunctionDeclaration(
+            Ast.Int,
+            "main",
+            [
+                Ast.ScalarParameter (Ast.Int, "a")
+                Ast.ScalarParameter (Ast.Bool, "b")
+            ],
+            (None, [
+                Ast.IfStatement(
+                    Ast.IdentifierExpression "b",
+                    Ast.ReturnStatement(Some(Ast.IdentifierExpression "a")),
+                    Some(Ast.ReturnStatement(Some(Ast.LiteralExpression(Ast.IntLiteral(1)))))
+                )
+            ])
+        )]
+    Assert.That(result, Is.EqualTo(expected))

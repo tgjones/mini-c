@@ -26,6 +26,7 @@ let statement             = nonTerminal<Statement>()
 let expressionStatement   = nonTerminal<ExpressionStatement>()
 let expression            = nonTerminal<Expression>()
 let ifStatement           = nonTerminal<IfStatement>()
+let optionalElseStatement = nonTerminal<Statement option>()
 let returnStatement       = nonTerminal<Expression option>()
 
 // Terminals
@@ -63,77 +64,87 @@ let forwardSlash  = terminal      "/"
 
 program.AddProduction(declarationList).SetReduceToFirst()
 
-declarationList.AddProduction(declarationList, declaration).SetReduceFunction (fun x y -> x @ [y])
-declarationList.AddProduction(declaration).SetReduceFunction (fun x -> [x])
+declarationList.AddProduction(declarationList, declaration).SetReduceFunction (fun a b -> a @ [b])
+declarationList.AddProduction(declaration).SetReduceFunction (fun a -> [a])
 
-declaration.AddProduction(variableDeclaration).SetReduceFunction (fun x -> Ast.VariableDeclaration x)
-declaration.AddProduction(functionDeclaration).SetReduceFunction (fun x -> Ast.FunctionDeclaration x)
+declaration.AddProduction(variableDeclaration).SetReduceFunction (fun a -> Ast.VariableDeclaration a)
+declaration.AddProduction(functionDeclaration).SetReduceFunction (fun a -> Ast.FunctionDeclaration a)
 
-typeSpec.AddProduction(voidKeyword).SetReduceFunction (fun x -> Ast.Void)
+typeSpec.AddProduction(voidKeyword).SetReduceFunction (fun _ -> Ast.Void)
 typeSpec.AddProduction(boolKeyword).SetReduceToFirst()
 typeSpec.AddProduction(intKeyword).SetReduceToFirst()
 
 variableDeclaration.AddProduction(typeSpec, identifier, semicolon)
-    .SetReduceFunction (fun x y z -> Ast.ScalarVariableDeclaration(x, y))
+    .SetReduceFunction (fun a b _ -> Ast.ScalarVariableDeclaration(a, b))
 
 functionDeclaration.AddProduction(typeSpec, identifier, openParen, parameters, closeParen, compoundStatement)
-    .SetReduceFunction (fun u v w x y z -> (u, v, x, z))
+    .SetReduceFunction (fun a b _ d _ f -> (a, b, d, f))
 
 parameters.AddProduction(parameterList).SetReduceToFirst()
-parameters.AddProduction(voidKeyword).SetReduceFunction (fun x -> [])
+parameters.AddProduction(voidKeyword).SetReduceFunction (fun _ -> [])
 
-parameterList.AddProduction(parameterList, comma, parameter).SetReduceFunction (fun x y z -> x @ [z])
-parameterList.AddProduction(parameter)                      .SetReduceFunction (fun x -> [x])
+parameterList.AddProduction(parameterList, comma, parameter).SetReduceFunction (fun a _ c -> a @ [c])
+parameterList.AddProduction(parameter)                      .SetReduceFunction (fun a -> [a])
 
-parameter.AddProduction(typeSpec, identifier).SetReduceFunction (fun x y -> Ast.ScalarParameter(x, y))
+parameter.AddProduction(typeSpec, identifier).SetReduceFunction (fun a b -> Ast.ScalarParameter(a, b))
 
 optionalStatementList.AddProduction(statementList).SetReduceToFirst()
-optionalStatementList.AddProduction().SetReduceFunction (fun () -> [])
+optionalStatementList.AddProduction()             .SetReduceFunction (fun () -> [])
 
-statementList.AddProduction(statementList, statement).SetReduceFunction (fun x y -> x @ [y])
-statementList.AddProduction(statement)               .SetReduceFunction (fun x -> [x])
+statementList.AddProduction(statementList, statement).SetReduceFunction (fun a b -> a @ [b])
+statementList.AddProduction(statement)               .SetReduceFunction (fun a -> [a])
 
-statement.AddProduction(expressionStatement).SetReduceFunction (fun x -> Ast.ExpressionStatement x)
-statement.AddProduction(ifStatement)        .SetReduceFunction (fun x -> Ast.IfStatement x)
-statement.AddProduction(returnStatement)    .SetReduceFunction (fun x -> Ast.ReturnStatement x)
+statement.AddProduction(expressionStatement).SetReduceFunction (fun a -> Ast.ExpressionStatement a)
+statement.AddProduction(ifStatement)        .SetReduceFunction (fun a -> Ast.IfStatement a)
+statement.AddProduction(returnStatement)    .SetReduceFunction (fun a -> Ast.ReturnStatement a)
 
-expressionStatement.AddProduction(expression, semicolon).SetReduceFunction (fun x y -> Ast.Expression x)
-expressionStatement.AddProduction(semicolon)            .SetReduceFunction (fun x -> Ast.Nop)
+expressionStatement.AddProduction(expression, semicolon).SetReduceFunction (fun a _ -> Ast.Expression a)
+expressionStatement.AddProduction(semicolon)            .SetReduceFunction (fun _ -> Ast.Nop)
 
 compoundStatement.AddProduction(openCurly, optionalStatementList, closeCurly)
-    .SetReduceFunction (fun x y z -> (None, y))
+    .SetReduceFunction (fun _ b _ -> (None, b))
 
-ifStatement.AddProduction(ifKeyword, openParen, expression, closeParen, statement)
-    .SetReduceFunction (fun u v w x y -> (w, y, None))
+ifStatement.AddProduction(ifKeyword, openParen, expression, closeParen, statement, optionalElseStatement)
+    .SetReduceFunction (fun _ _ c _ e f -> (c, e, f))
 
-returnStatement.AddProduction(returnKeyword, expression, semicolon).SetReduceFunction (fun x y z -> Some y)
-returnStatement.AddProduction(returnKeyword, semicolon)            .SetReduceFunction (fun x y -> None)
+let optionalElsePrecedenceGroup = configurator.LeftAssociative()
+let elseStatementProduction = optionalElseStatement.AddProduction(elseKeyword, statement)
+elseStatementProduction.SetReduceFunction (fun _ b -> Some b)
+elseStatementProduction.SetPrecedence optionalElsePrecedenceGroup
+
+let elseEpsilonProduction = optionalElseStatement.AddProduction()
+elseEpsilonProduction.SetReduceFunction (fun () -> None)
+elseEpsilonProduction.SetPrecedence optionalElsePrecedenceGroup
+
+returnStatement.AddProduction(returnKeyword, expression, semicolon).SetReduceFunction (fun _ b _ -> Some b)
+returnStatement.AddProduction(returnKeyword, semicolon)            .SetReduceFunction (fun _ _ -> None)
 
 // TODO: Extract the binary operators into a binaryOperator non-terminal.
 // But can't seem to do it without a shift/reduce conflict.
 expression.AddProduction(expression, plus, expression)
-    .SetReduceFunction (fun x y z -> Ast.BinaryExpression(x, Ast.Add, z))
+    .SetReduceFunction (fun a _ c -> Ast.BinaryExpression(a, Ast.Add, c))
 expression.AddProduction(expression, minus, expression)
-    .SetReduceFunction (fun x y z -> Ast.BinaryExpression(x, Ast.Subtract, z))
+    .SetReduceFunction (fun a _ c -> Ast.BinaryExpression(a, Ast.Subtract, c))
 expression.AddProduction(expression, asterisk, expression)
-    .SetReduceFunction (fun x y z -> Ast.BinaryExpression(x, Ast.Multiply, z))
+    .SetReduceFunction (fun a _ c -> Ast.BinaryExpression(a, Ast.Multiply, c))
 expression.AddProduction(expression, forwardSlash, expression)
-    .SetReduceFunction (fun x y z -> Ast.BinaryExpression(x, Ast.Divide, z))
+    .SetReduceFunction (fun a _ c -> Ast.BinaryExpression(a, Ast.Divide, c))
 expression.AddProduction(expression, percent, expression)
-    .SetReduceFunction (fun x y z -> Ast.BinaryExpression(x, Ast.Modulus, z))
+    .SetReduceFunction (fun a _ c -> Ast.BinaryExpression(a, Ast.Modulus, c))
 
 expression.AddProduction(exclamation, expression)
-    .SetReduceFunction (fun x y -> Ast.UnaryExpression(Ast.LogicalNegate, y))
+    .SetReduceFunction (fun _ b -> Ast.UnaryExpression(Ast.LogicalNegate, b))
 expression.AddProduction(minus, expression)
-    .SetReduceFunction (fun x y -> Ast.UnaryExpression(Ast.Negate, y))
+    .SetReduceFunction (fun _ b -> Ast.UnaryExpression(Ast.Negate, b))
 expression.AddProduction(plus, expression)
-    .SetReduceFunction (fun x y -> Ast.UnaryExpression(Ast.Identity, y))
+    .SetReduceFunction (fun _ b -> Ast.UnaryExpression(Ast.Identity, b))
 
-expression.AddProduction(identifier).SetReduceFunction (fun x -> Ast.IdentifierExpression x)
-expression.AddProduction(number)    .SetReduceFunction (fun x -> Ast.LiteralExpression x)
+expression.AddProduction(identifier).SetReduceFunction (fun a -> Ast.IdentifierExpression a)
+expression.AddProduction(number)    .SetReduceFunction (fun a -> Ast.LiteralExpression a)
 
 configurator.LeftAssociative(downcast exclamation.Symbol, downcast plus.Symbol, downcast minus.Symbol) |> ignore
 configurator.LeftAssociative(downcast asterisk.Symbol, downcast forwardSlash.Symbol, downcast percent.Symbol) |> ignore
+configurator.LeftAssociative(downcast elseKeyword.Symbol) |> ignore
 
 configurator.LexerSettings.Ignore <- [|@"\s+"|]
 let parser = configurator.CreateParser()
