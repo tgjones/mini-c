@@ -50,6 +50,7 @@ and IfStatement = Expression (* condition *) * Statement (* then *) * Statement 
 and WhileStatement = Expression * Statement
 
 and Expression =
+    | AssignmentExpression of Identifier * Expression
     | BinaryExpression of Expression * BinaryOperator * Expression
     | UnaryExpression of UnaryOperator * Expression
     | IdentifierExpression of Identifier

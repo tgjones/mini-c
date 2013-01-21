@@ -67,6 +67,7 @@ let semicolon        = terminal      ";"
 let comma            = terminal      ","
 let percent          = terminal      "%"
 let forwardSlash     = terminal      "/"
+let singleEquals     = terminal      "="
 let doublePipes      = terminal      @"\|\|"
 let doubleEquals     = terminal      "=="
 let bangEquals       = terminal      "!="
@@ -82,6 +83,8 @@ let optionalElsePrecedenceGroup = configurator.LeftAssociative()
 
 configurator.LeftAssociative(downcast elseKeyword.Symbol) |> ignore
 
+configurator.LeftAssociative(downcast singleEquals.Symbol)
+                             |> ignore
 configurator.LeftAssociative(downcast doublePipes.Symbol)
                              |> ignore
 configurator.LeftAssociative(downcast doubleEquals.Symbol,
@@ -177,6 +180,8 @@ elseEpsilonProduction.SetPrecedence optionalElsePrecedenceGroup
 
 returnStatement.AddProduction(returnKeyword, expression, semicolon).SetReduceFunction (fun _ b _ -> Some b)
 returnStatement.AddProduction(returnKeyword, semicolon)            .SetReduceFunction (fun _ _ -> None)
+
+expression.AddProduction(identifier, singleEquals, expression).SetReduceFunction (fun a _ c -> Ast.AssignmentExpression(a, c))
 
 let binaryExpressionProduction = expression.AddProduction(expression, binaryOperator, expression)
 binaryExpressionProduction.SetReduceFunction (fun a b c -> Ast.BinaryExpression(a, b, c))

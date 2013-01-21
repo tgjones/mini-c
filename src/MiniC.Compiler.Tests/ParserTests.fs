@@ -393,14 +393,23 @@ let ``can parse assignment expression``() =
     let expected =
         [Ast.FunctionDeclaration(
             Ast.Int, "main",
-            [ Ast.ScalarParameter (Ast.Bool, "b") ],
+            [ Ast.ScalarParameter (Ast.Int, "i") ],
             (
                 [],
                 [
-                    Ast.WhileStatement(
-                        Ast.IdentifierExpression "b",
-                        Ast.ReturnStatement(Some(Ast.LiteralExpression (Ast.IntLiteral 1)))
+                    Ast.ExpressionStatement(
+                        Ast.Expression(
+                            Ast.AssignmentExpression(
+                                "i",
+                                Ast.BinaryExpression(
+                                    Ast.IdentifierExpression("i"),
+                                    Ast.Add,
+                                    Ast.LiteralExpression(Ast.IntLiteral(1))
+                                )
+                            )
+                        )
                     )
+                    Ast.ReturnStatement(Some(Ast.IdentifierExpression "i"))
                 ]
             )
         )]
