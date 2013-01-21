@@ -183,3 +183,36 @@ let ``can parse complex arithmetic expression``() =
             )
         ]
     Assert.That(result, Is.EqualTo(expected))
+
+[<Test>]
+let ``can parse logical negation and unary subtraction expression``() =
+    let result = Parser.parse "
+        int foo(bool b) {
+            if (!b)
+                return -1234*a;
+        }"
+    let expected =
+        [Ast.FunctionDeclaration(
+            Ast.Int,
+            "foo",
+            [ Ast.ScalarParameter (Ast.Bool, "b") ],
+            (None, [
+                Ast.IfStatement(
+                    Ast.UnaryExpression (Ast.LogicalNegate, Ast.IdentifierExpression("b")),
+                    Ast.ReturnStatement(
+                        Some(
+                            Ast.UnaryExpression(
+                                Ast.Negate,
+                                Ast.BinaryExpression(
+                                    Ast.LiteralExpression(Ast.IntLiteral(1234)),
+                                    Ast.Multiply,
+                                    Ast.IdentifierExpression("a")
+                                )
+                            )
+                        )
+                    ),
+                    None
+                )
+            ])
+        )]
+    Assert.That(result, Is.EqualTo(expected))

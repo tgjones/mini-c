@@ -41,6 +41,8 @@ let elseKeyword   = terminal      "else"
 let returnKeyword = terminal      "return"
 let voidKeyword   = terminal      "void"
 let plus          = terminal      @"\+"
+let minus         = terminal      "-"
+let exclamation   = terminal      @"!"
 let asterisk      = terminal      @"\*"
 let number        = terminalParse @"\d+"  (fun s -> Ast.IntLiteral(int32 s))
 let trueLiteral   = terminalParse "true"  (fun s -> Ast.BoolLiteral(true))
@@ -111,6 +113,8 @@ returnStatement.AddProduction(returnKeyword, semicolon)            .SetReduceFun
 // But can't seem to do it without a shift/reduce conflict.
 expression.AddProduction(expression, plus, expression)
     .SetReduceFunction (fun x y z -> Ast.BinaryExpression(x, Ast.Add, z))
+expression.AddProduction(expression, minus, expression)
+    .SetReduceFunction (fun x y z -> Ast.BinaryExpression(x, Ast.Subtract, z))
 expression.AddProduction(expression, asterisk, expression)
     .SetReduceFunction (fun x y z -> Ast.BinaryExpression(x, Ast.Multiply, z))
 expression.AddProduction(expression, forwardSlash, expression)
@@ -118,10 +122,17 @@ expression.AddProduction(expression, forwardSlash, expression)
 expression.AddProduction(expression, percent, expression)
     .SetReduceFunction (fun x y z -> Ast.BinaryExpression(x, Ast.Modulus, z))
 
+expression.AddProduction(exclamation, expression)
+    .SetReduceFunction (fun x y -> Ast.UnaryExpression(Ast.LogicalNegate, y))
+expression.AddProduction(minus, expression)
+    .SetReduceFunction (fun x y -> Ast.UnaryExpression(Ast.Negate, y))
+expression.AddProduction(plus, expression)
+    .SetReduceFunction (fun x y -> Ast.UnaryExpression(Ast.Identity, y))
+
 expression.AddProduction(identifier).SetReduceFunction (fun x -> Ast.IdentifierExpression x)
 expression.AddProduction(number)    .SetReduceFunction (fun x -> Ast.LiteralExpression x)
 
-configurator.LeftAssociative(downcast plus.Symbol) |> ignore
+configurator.LeftAssociative(downcast exclamation.Symbol, downcast plus.Symbol, downcast minus.Symbol) |> ignore
 configurator.LeftAssociative(downcast asterisk.Symbol, downcast forwardSlash.Symbol, downcast percent.Symbol) |> ignore
 
 configurator.LexerSettings.Ignore <- [|@"\s+"|]
