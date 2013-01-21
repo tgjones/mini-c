@@ -43,30 +43,38 @@ let terminalParse<'T> regex (onParse : (string -> 'T)) =
 let terminal regex =
     new TerminalWrapper<string>(configurator.CreateTerminal(regex))
 
-let ifKeyword     = terminal      "if"
-let elseKeyword   = terminal      "else"
-let whileKeyword  = terminal      "while"
-let returnKeyword = terminal      "return"
-let voidKeyword   = terminal      "void"
-let plus          = terminal      @"\+"
-let minus         = terminal      "-"
-let exclamation   = terminal      @"!"
-let asterisk      = terminal      @"\*"
-let number        = terminalParse @"\d+"  (fun s -> Ast.IntLiteral(int32 s))
-let trueLiteral   = terminalParse "true"  (fun s -> Ast.BoolLiteral(true))
-let falseLiteral  = terminalParse "false" (fun s -> Ast.BoolLiteral(false))
-let boolKeyword   = terminalParse "bool"  (fun s -> Ast.Bool)
-let intKeyword    = terminalParse "int"   (fun s -> Ast.Int)
-let floatKeyword  = terminalParse "float" (fun s -> Ast.Float)
-let identifier    = terminalParse @"\w+"  (fun s -> s)
-let openParen     = terminal      @"\("
-let closeParen    = terminal      @"\)"
-let openCurly     = terminal      @"\{"
-let closeCurly    = terminal      @"\}"
-let semicolon     = terminal      ";"
-let comma         = terminal      ","
-let percent       = terminal      "%"
-let forwardSlash  = terminal      "/"
+let ifKeyword        = terminal      "if"
+let elseKeyword      = terminal      "else"
+let whileKeyword     = terminal      "while"
+let returnKeyword    = terminal      "return"
+let voidKeyword      = terminal      "void"
+let plus             = terminal      @"\+"
+let minus            = terminal      "-"
+let exclamation      = terminal      @"!"
+let asterisk         = terminal      @"\*"
+let number           = terminalParse @"\d+"  (fun s -> Ast.IntLiteral(int32 s))
+let trueLiteral      = terminalParse "true"  (fun s -> Ast.BoolLiteral(true))
+let falseLiteral     = terminalParse "false" (fun s -> Ast.BoolLiteral(false))
+let boolKeyword      = terminalParse "bool"  (fun s -> Ast.Bool)
+let intKeyword       = terminalParse "int"   (fun s -> Ast.Int)
+let floatKeyword     = terminalParse "float" (fun s -> Ast.Float)
+let identifier       = terminalParse @"\w+"  (fun s -> s)
+let openParen        = terminal      @"\("
+let closeParen       = terminal      @"\)"
+let openCurly        = terminal      @"\{"
+let closeCurly       = terminal      @"\}"
+let semicolon        = terminal      ";"
+let comma            = terminal      ","
+let percent          = terminal      "%"
+let forwardSlash     = terminal      "/"
+let doublePipes      = terminal      @"\|\|"
+let doubleEquals     = terminal      "=="
+let bangEquals       = terminal      "!="
+let openAngleEquals  = terminal      "<="
+let openAngle        = terminal      "<"
+let closeAngleEquals = terminal      ">="
+let closeAngle       = terminal      ">"
+let doubleAmpersands = terminal      "&&"
 
 // Precedence
 
@@ -74,8 +82,26 @@ let optionalElsePrecedenceGroup = configurator.LeftAssociative()
 
 configurator.LeftAssociative(downcast elseKeyword.Symbol) |> ignore
 
-configurator.LeftAssociative(downcast exclamation.Symbol, downcast plus.Symbol, downcast minus.Symbol) |> ignore
-configurator.LeftAssociative(downcast asterisk.Symbol, downcast forwardSlash.Symbol, downcast percent.Symbol) |> ignore
+configurator.LeftAssociative(downcast doublePipes.Symbol)
+                             |> ignore
+configurator.LeftAssociative(downcast doubleEquals.Symbol,
+                             downcast bangEquals.Symbol)
+                             |> ignore
+configurator.LeftAssociative(downcast openAngleEquals.Symbol,
+                             downcast openAngle.Symbol,
+                             downcast closeAngleEquals.Symbol,
+                             downcast closeAngle.Symbol)
+                             |> ignore
+configurator.LeftAssociative(downcast doubleAmpersands.Symbol)
+                             |> ignore
+configurator.LeftAssociative(downcast exclamation.Symbol,
+                             downcast plus.Symbol,
+                             downcast minus.Symbol)
+                             |> ignore
+configurator.LeftAssociative(downcast asterisk.Symbol,
+                             downcast forwardSlash.Symbol,
+                             downcast percent.Symbol)
+                             |> ignore
 
 let binaryExpressionPrecedenceGroup = configurator.LeftAssociative()
 let unaryExpressionPrecedenceGroup  = configurator.RightAssociative()
@@ -160,14 +186,24 @@ let unaryExpressionProduction = expression.AddProduction(unaryOperator, expressi
 unaryExpressionProduction.SetReduceFunction (fun a b -> Ast.UnaryExpression(a, b))
 unaryExpressionProduction.SetPrecedence unaryExpressionPrecedenceGroup
 
-expression.AddProduction(identifier).SetReduceFunction (fun a -> Ast.IdentifierExpression a)
-expression.AddProduction(number)    .SetReduceFunction (fun a -> Ast.LiteralExpression a)
+expression.AddProduction(identifier)  .SetReduceFunction (fun a -> Ast.IdentifierExpression a)
+expression.AddProduction(trueLiteral) .SetReduceFunction (fun a -> Ast.LiteralExpression a)
+expression.AddProduction(falseLiteral).SetReduceFunction (fun a -> Ast.LiteralExpression a)
+expression.AddProduction(number)      .SetReduceFunction (fun a -> Ast.LiteralExpression a)
 
-binaryOperator.AddProduction(plus)        .SetReduceFunction (fun a -> Ast.Add)
-binaryOperator.AddProduction(minus)       .SetReduceFunction (fun a -> Ast.Subtract)
-binaryOperator.AddProduction(asterisk)    .SetReduceFunction (fun a -> Ast.Multiply)
-binaryOperator.AddProduction(forwardSlash).SetReduceFunction (fun a -> Ast.Divide)
-binaryOperator.AddProduction(percent)     .SetReduceFunction (fun a -> Ast.Modulus)
+binaryOperator.AddProduction(doublePipes)     .SetReduceFunction (fun a -> Ast.ConditionalOr)
+binaryOperator.AddProduction(doubleEquals)    .SetReduceFunction (fun a -> Ast.Equal)
+binaryOperator.AddProduction(bangEquals)      .SetReduceFunction (fun a -> Ast.NotEqual)
+binaryOperator.AddProduction(openAngleEquals) .SetReduceFunction (fun a -> Ast.LessEqual)
+binaryOperator.AddProduction(openAngle)       .SetReduceFunction (fun a -> Ast.Less)
+binaryOperator.AddProduction(closeAngleEquals).SetReduceFunction (fun a -> Ast.GreaterEqual)
+binaryOperator.AddProduction(closeAngle)      .SetReduceFunction (fun a -> Ast.Greater)
+binaryOperator.AddProduction(doubleAmpersands).SetReduceFunction (fun a -> Ast.ConditionalAnd)
+binaryOperator.AddProduction(plus)            .SetReduceFunction (fun a -> Ast.Add)
+binaryOperator.AddProduction(minus)           .SetReduceFunction (fun a -> Ast.Subtract)
+binaryOperator.AddProduction(asterisk)        .SetReduceFunction (fun a -> Ast.Multiply)
+binaryOperator.AddProduction(forwardSlash)    .SetReduceFunction (fun a -> Ast.Divide)
+binaryOperator.AddProduction(percent)         .SetReduceFunction (fun a -> Ast.Modulus)
 
 unaryOperator.AddProduction(exclamation).SetReduceFunction (fun a -> Ast.LogicalNegate)
 unaryOperator.AddProduction(minus)      .SetReduceFunction (fun a -> Ast.Negate)
