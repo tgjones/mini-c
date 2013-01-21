@@ -30,6 +30,14 @@ type ProductionWrapper<'a,'b,'c,'T> (production : IProduction<obj>) =
                                                       (unbox o.[1])
                                                       (unbox o.[2])))
 
+type ProductionWrapper<'a,'b,'c,'d,'T> (production : IProduction<obj>) =
+    inherit ProductionWrapperBase(production)
+    member x.SetReduceFunction (f : ('a -> 'b -> 'c -> 'd -> 'T)) =
+        production.SetReduceFunction (fun o -> box (f (unbox o.[0])
+                                                      (unbox o.[1])
+                                                      (unbox o.[2])
+                                                      (unbox o.[3])))
+
 type ProductionWrapper<'a,'b,'c,'d,'e,'T> (production : IProduction<obj>) =
     inherit ProductionWrapperBase(production)
     member x.SetReduceFunction (f : ('a -> 'b -> 'c -> 'd -> 'e -> 'T)) =
@@ -88,6 +96,16 @@ type NonTerminalWrapper<'T> (nonTerminal : INonTerminal<obj>) =
                                                    part2.Symbol,
                                                    part3.Symbol)
         new ProductionWrapper<'a,'b,'c,'T>(production)
+
+    member x.AddProduction((part1 : SymbolWrapper<'a>),
+                           (part2 : SymbolWrapper<'b>),
+                           (part3 : SymbolWrapper<'c>),
+                           (part4 : SymbolWrapper<'d>)) =
+        let production = nonTerminal.AddProduction(part1.Symbol,
+                                                   part2.Symbol,
+                                                   part3.Symbol,
+                                                   part4.Symbol)
+        new ProductionWrapper<'a,'b,'c,'d,'T>(production)
 
     member x.AddProduction((part1 : SymbolWrapper<'a>),
                            (part2 : SymbolWrapper<'b>),

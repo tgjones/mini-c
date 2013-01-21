@@ -301,10 +301,10 @@ let ``can parse local declarations in compound statements``() =
         [Ast.FunctionDeclaration(
             Ast.Int, "main", [],
             (
-                [],
+                [ Ast.ScalarLocalDeclaration(Ast.Int, "a") ],
                 [
                     Ast.CompoundStatement(
-                        [],
+                        [ Ast.ScalarLocalDeclaration(Ast.Int, "b") ],
                         []
                     )
                 ]
