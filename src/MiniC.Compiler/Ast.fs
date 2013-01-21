@@ -30,6 +30,7 @@ and Statement =
     | ExpressionStatement of ExpressionStatement
     | CompoundStatement of CompoundStatement
     | IfStatement of IfStatement
+    | WhileStatement of WhileStatement
     | ReturnStatement of Expression option
 
 and ExpressionStatement =
@@ -45,6 +46,8 @@ and LocalDeclaration =
     | ArrayLocalDeclaration of TypeSpec * Identifier
 
 and IfStatement = Expression (* condition *) * Statement (* then *) * Statement option (* else *)
+
+and WhileStatement = Expression * Statement
 
 and Expression =
     | BinaryExpression of Expression * BinaryOperator * Expression

@@ -238,7 +238,28 @@ let ``can parse if / else statement``() =
                 Ast.IfStatement(
                     Ast.IdentifierExpression "b",
                     Ast.ReturnStatement(Some(Ast.IdentifierExpression "a")),
-                    Some(Ast.ReturnStatement(Some(Ast.LiteralExpression(Ast.IntLiteral(1)))))
+                    Some(Ast.ReturnStatement(Some(Ast.LiteralExpression (Ast.IntLiteral 1))))
+                )
+            ])
+        )]
+    Assert.That(result, Is.EqualTo(expected))
+
+[<Test>]
+let ``can parse while statement``() =
+    let result = Parser.parse "
+        int main(bool b) {
+            while (b)
+                return 1;
+        }"
+    let expected =
+        [Ast.FunctionDeclaration(
+            Ast.Int,
+            "main",
+            [ Ast.ScalarParameter (Ast.Bool, "b") ],
+            (None, [
+                Ast.WhileStatement(
+                    Ast.IdentifierExpression "b",
+                    Ast.ReturnStatement(Some(Ast.LiteralExpression (Ast.IntLiteral 1)))
                 )
             ])
         )]
