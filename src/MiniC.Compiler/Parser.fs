@@ -29,6 +29,7 @@ let optionalElseStatement = nonTerminal<Statement option>()
 let returnStatement       = nonTerminal<Expression option>()
 let expression            = nonTerminal<Expression>()
 let binaryOperator        = nonTerminal<BinaryOperator>()
+let unaryOperator         = nonTerminal<UnaryOperator>()
 
 // Terminals
 
@@ -67,10 +68,11 @@ let optionalElsePrecedenceGroup = configurator.LeftAssociative()
 
 configurator.LeftAssociative(downcast elseKeyword.Symbol) |> ignore
 
-let multiplicativePrecedence = configurator.LeftAssociative(downcast exclamation.Symbol, downcast plus.Symbol, downcast minus.Symbol)
-let additionPrecedence       = configurator.LeftAssociative(downcast asterisk.Symbol, downcast forwardSlash.Symbol, downcast percent.Symbol)
+configurator.LeftAssociative(downcast exclamation.Symbol, downcast plus.Symbol, downcast minus.Symbol) |> ignore
+configurator.LeftAssociative(downcast asterisk.Symbol, downcast forwardSlash.Symbol, downcast percent.Symbol) |> ignore
 
-let expressionPrecedenceGroup = configurator.LeftAssociative()
+let binaryExpressionPrecedenceGroup = configurator.LeftAssociative()
+let unaryExpressionPrecedenceGroup  = configurator.RightAssociative()
 
 // Productions
 
@@ -132,14 +134,11 @@ returnStatement.AddProduction(returnKeyword, semicolon)            .SetReduceFun
 
 let binaryExpressionProduction = expression.AddProduction(expression, binaryOperator, expression)
 binaryExpressionProduction.SetReduceFunction (fun a b c -> Ast.BinaryExpression(a, b, c))
-binaryExpressionProduction.SetPrecedence expressionPrecedenceGroup
+binaryExpressionProduction.SetPrecedence binaryExpressionPrecedenceGroup
 
-expression.AddProduction(exclamation, expression)
-    .SetReduceFunction (fun _ b -> Ast.UnaryExpression(Ast.LogicalNegate, b))
-expression.AddProduction(minus, expression)
-    .SetReduceFunction (fun _ b -> Ast.UnaryExpression(Ast.Negate, b))
-expression.AddProduction(plus, expression)
-    .SetReduceFunction (fun _ b -> Ast.UnaryExpression(Ast.Identity, b))
+let unaryExpressionProduction = expression.AddProduction(unaryOperator, expression)
+unaryExpressionProduction.SetReduceFunction (fun a b -> Ast.UnaryExpression(a, b))
+unaryExpressionProduction.SetPrecedence unaryExpressionPrecedenceGroup
 
 expression.AddProduction(identifier).SetReduceFunction (fun a -> Ast.IdentifierExpression a)
 expression.AddProduction(number)    .SetReduceFunction (fun a -> Ast.LiteralExpression a)
@@ -149,6 +148,10 @@ binaryOperator.AddProduction(minus)       .SetReduceFunction (fun a -> Ast.Subtr
 binaryOperator.AddProduction(asterisk)    .SetReduceFunction (fun a -> Ast.Multiply)
 binaryOperator.AddProduction(forwardSlash).SetReduceFunction (fun a -> Ast.Divide)
 binaryOperator.AddProduction(percent)     .SetReduceFunction (fun a -> Ast.Modulus)
+
+unaryOperator.AddProduction(exclamation).SetReduceFunction (fun a -> Ast.LogicalNegate)
+unaryOperator.AddProduction(minus)      .SetReduceFunction (fun a -> Ast.Negate)
+unaryOperator.AddProduction(plus)       .SetReduceFunction (fun a -> Ast.Identity)
 
 configurator.LexerSettings.Ignore <- [|@"\s+"|]
 let parser = configurator.CreateParser()

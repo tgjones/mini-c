@@ -201,13 +201,13 @@ let ``can parse logical negation and unary subtraction expression``() =
                     Ast.UnaryExpression (Ast.LogicalNegate, Ast.IdentifierExpression("b")),
                     Ast.ReturnStatement(
                         Some(
-                            Ast.UnaryExpression(
-                                Ast.Negate,
-                                Ast.BinaryExpression(
-                                    Ast.LiteralExpression(Ast.IntLiteral(1234)),
-                                    Ast.Multiply,
-                                    Ast.IdentifierExpression("a")
-                                )
+                            Ast.BinaryExpression(
+                                Ast.UnaryExpression(
+                                    Ast.Negate,
+                                    Ast.LiteralExpression(Ast.IntLiteral(1234))
+                                ),
+                                Ast.Multiply,
+                                Ast.IdentifierExpression("a")
                             )
                         )
                     ),
