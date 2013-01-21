@@ -28,30 +28,69 @@ let ``can parse nearly-empty main method``() =
     Assert.That(result, Is.EqualTo(expected))
 
 [<Test>]
-let ``can parse binary expression``() =
-    let result = Parser.parse "
-        void main(void) {
-            123+456;
-        }"
-    let expected =
-        [Ast.FunctionDeclaration(
-            Ast.Void, "main", [],
-            (
-                [],
-                [
-                    Ast.ExpressionStatement(
-                        Ast.Expression(
-                            Ast.BinaryExpression(
-                                Ast.LiteralExpression(Ast.IntLiteral(123)),
-                                Ast.Add,
-                                Ast.LiteralExpression(Ast.IntLiteral(456))
-                           )
+let ``can parse binary arithmetic expressions``() =
+    let doTest operator binaryOperator =
+        let code = (sprintf "
+            void main(void) {
+                123%s456;
+            }" operator)
+        let result = Parser.parse code
+        let expected =
+            [Ast.FunctionDeclaration(
+                Ast.Void, "main", [],
+                (
+                    [],
+                    [
+                        Ast.ExpressionStatement(
+                            Ast.Expression(
+                                Ast.BinaryExpression(
+                                    Ast.LiteralExpression(Ast.IntLiteral(123)),
+                                    binaryOperator,
+                                    Ast.LiteralExpression(Ast.IntLiteral(456))
+                               )
+                            )
                         )
-                    )
-                ]
-            )
-        )]
-    Assert.That(result, Is.EqualTo(expected))
+                    ]
+                )
+            )]
+        Assert.That(result, Is.EqualTo(expected))
+
+    doTest "+" Ast.Add
+    doTest "-" Ast.Subtract
+    doTest "*" Ast.Multiply
+    doTest "/" Ast.Divide
+    doTest "%" Ast.Modulus
+
+[<Test>]
+let ``can parse unary arithmetic expressions``() =
+    let doTest operator unaryOperator =
+        let code = (sprintf "
+            void main(void) {
+                %s123;
+            }" operator)
+        let result = Parser.parse code
+        let expected =
+            [Ast.FunctionDeclaration(
+                Ast.Void, "main", [],
+                (
+                    [],
+                    [
+                        Ast.ExpressionStatement(
+                            Ast.Expression(
+                                Ast.UnaryExpression(
+                                    unaryOperator,
+                                    Ast.LiteralExpression(Ast.IntLiteral(123))
+                               )
+                            )
+                        )
+                    ]
+                )
+            )]
+        Assert.That(result, Is.EqualTo(expected))
+
+    doTest "!" Ast.LogicalNegate
+    doTest "-" Ast.Negate
+    doTest "+" Ast.Identity
 
 [<Test>]
 let ``can parse return void statement``() =
@@ -293,21 +332,113 @@ let ``can parse local declarations in compound statements``() =
     let result = Parser.parse "
         int main(void) {
             int a;
+            bool b;
+            float c;
             {
-                int b;
+                int d;
             }
         }"
     let expected =
         [Ast.FunctionDeclaration(
             Ast.Int, "main", [],
             (
-                [ Ast.ScalarLocalDeclaration(Ast.Int, "a") ],
+                [
+                    Ast.ScalarLocalDeclaration(Ast.Int, "a")
+                    Ast.ScalarLocalDeclaration(Ast.Bool, "b")
+                    Ast.ScalarLocalDeclaration(Ast.Float, "c")
+                ],
                 [
                     Ast.CompoundStatement(
-                        [ Ast.ScalarLocalDeclaration(Ast.Int, "b") ],
+                        [ Ast.ScalarLocalDeclaration(Ast.Int, "d") ],
                         []
                     )
                 ]
             )
         )]
     Assert.That(result, Is.EqualTo(expected))
+
+[<Test>]
+let ``can parse function call``() =
+    let result = Parser.parse "
+        int func(int i, int j) {
+            return i + j;
+        }
+
+        int main(int i) {
+            return func(i + 1, i - 1);
+        }"
+    let expected =
+        [Ast.FunctionDeclaration(
+            Ast.Int, "main",
+            [ Ast.ScalarParameter (Ast.Bool, "b") ],
+            (
+                [],
+                [
+                    Ast.WhileStatement(
+                        Ast.IdentifierExpression "b",
+                        Ast.ReturnStatement(Some(Ast.LiteralExpression (Ast.IntLiteral 1)))
+                    )
+                ]
+            )
+        )]
+    Assert.That(result, Is.EqualTo(expected))
+
+[<Test>]
+let ``can parse assignment expression``() =
+    let result = Parser.parse "
+        int main(int i) {
+            i = i + 1;
+            return i;
+        }"
+    let expected =
+        [Ast.FunctionDeclaration(
+            Ast.Int, "main",
+            [ Ast.ScalarParameter (Ast.Bool, "b") ],
+            (
+                [],
+                [
+                    Ast.WhileStatement(
+                        Ast.IdentifierExpression "b",
+                        Ast.ReturnStatement(Some(Ast.LiteralExpression (Ast.IntLiteral 1)))
+                    )
+                ]
+            )
+        )]
+    Assert.That(result, Is.EqualTo(expected))
+
+[<Test>]
+let ``can parse logical comparison expressions``() =
+    let doTest operator binaryOperator =
+        let code = (sprintf "
+            bool main() {
+                return true %s false;
+            }" operator)
+        let result = Parser.parse code
+        let expected =
+            [Ast.FunctionDeclaration(
+                Ast.Int, "main", [],
+                (
+                    [],
+                    [
+                        Ast.ReturnStatement(
+                            Some(
+                                Ast.BinaryExpression(
+                                    Ast.LiteralExpression(Ast.BoolLiteral(true)),
+                                    binaryOperator,
+                                    Ast.LiteralExpression(Ast.BoolLiteral(false))
+                                )
+                            )
+                        )
+                    ]
+                )
+            )]
+        Assert.That(result, Is.EqualTo(expected))
+    
+    doTest "||" Ast.ConditionalOr
+    doTest "==" Ast.Equal
+    doTest "!=" Ast.NotEqual
+    doTest "<=" Ast.LessEqual
+    doTest "<"  Ast.Less
+    doTest ">=" Ast.GreaterEqual
+    doTest ">"  Ast.Greater
+    doTest "&&" Ast.ConditionalAnd

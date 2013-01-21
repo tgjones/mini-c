@@ -57,6 +57,7 @@ let trueLiteral   = terminalParse "true"  (fun s -> Ast.BoolLiteral(true))
 let falseLiteral  = terminalParse "false" (fun s -> Ast.BoolLiteral(false))
 let boolKeyword   = terminalParse "bool"  (fun s -> Ast.Bool)
 let intKeyword    = terminalParse "int"   (fun s -> Ast.Int)
+let floatKeyword  = terminalParse "float" (fun s -> Ast.Float)
 let identifier    = terminalParse @"\w+"  (fun s -> s)
 let openParen     = terminal      @"\("
 let closeParen    = terminal      @"\)"
@@ -92,6 +93,7 @@ declaration.AddProduction(functionDeclaration).SetReduceFunction (fun a -> Ast.F
 typeSpec.AddProduction(voidKeyword).SetReduceFunction (fun _ -> Ast.Void)
 typeSpec.AddProduction(boolKeyword).SetReduceToFirst()
 typeSpec.AddProduction(intKeyword).SetReduceToFirst()
+typeSpec.AddProduction(floatKeyword).SetReduceToFirst()
 
 variableDeclaration.AddProduction(typeSpec, identifier, semicolon)
     .SetReduceFunction (fun a b _ -> Ast.ScalarVariableDeclaration(a, b))
