@@ -37,7 +37,7 @@ and ExpressionStatement =
     | Expression of Expression
     | Nop
 
-and CompoundStatement = LocalDeclarations option * Statement list
+and CompoundStatement = LocalDeclarations * Statement list
 
 and LocalDeclarations = LocalDeclaration list
 

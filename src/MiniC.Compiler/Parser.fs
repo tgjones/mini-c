@@ -119,7 +119,7 @@ expressionStatement.AddProduction(expression, semicolon).SetReduceFunction (fun 
 expressionStatement.AddProduction(semicolon)            .SetReduceFunction (fun _ -> Ast.Nop)
 
 compoundStatement.AddProduction(openCurly, optionalStatementList, closeCurly)
-    .SetReduceFunction (fun _ b _ -> (None, b))
+    .SetReduceFunction (fun _ b _ -> ([], b))
 
 whileStatement.AddProduction(whileKeyword, openParen, expression, closeParen, statement)
     .SetReduceFunction (fun a b c d e -> (c, e))

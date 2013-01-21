@@ -7,14 +7,14 @@ open MiniC.Compiler
 let ``can parse empty main method``() =
     let result = Parser.parse "void main(void) { }"
     let expected =
-        [Ast.FunctionDeclaration(Ast.Void, "main", [], (None, [])) ]
+        [Ast.FunctionDeclaration(Ast.Void, "main", [], ([], [])) ]
     Assert.That(result, Is.EqualTo(expected))
 
 [<Test>]
 let ``can parse empty main method with random whitespace``() =
     let result = Parser.parse "   void  main (  void ) {   }   "
     let expected =
-        [Ast.FunctionDeclaration(Ast.Void, "main", [], (None, [])) ]
+        [Ast.FunctionDeclaration(Ast.Void, "main", [], ([], [])) ]
     Assert.That(result, Is.EqualTo(expected))
 
 [<Test>]
@@ -24,7 +24,7 @@ let ``can parse nearly-empty main method``() =
             ;
         }"
     let expected =
-        [Ast.FunctionDeclaration(Ast.Void, "main", [], (None, [Ast.ExpressionStatement(Ast.Nop)])) ]
+        [Ast.FunctionDeclaration(Ast.Void, "main", [], ([], [Ast.ExpressionStatement(Ast.Nop)])) ]
     Assert.That(result, Is.EqualTo(expected))
 
 [<Test>]
@@ -36,17 +36,20 @@ let ``can parse binary expression``() =
     let expected =
         [Ast.FunctionDeclaration(
             Ast.Void, "main", [],
-            (None, [
-                Ast.ExpressionStatement(
-                    Ast.Expression(
-                        Ast.BinaryExpression(
-                            Ast.LiteralExpression(Ast.IntLiteral(123)),
-                            Ast.Add,
-                            Ast.LiteralExpression(Ast.IntLiteral(456))
-                       )
+            (
+                [],
+                [
+                    Ast.ExpressionStatement(
+                        Ast.Expression(
+                            Ast.BinaryExpression(
+                                Ast.LiteralExpression(Ast.IntLiteral(123)),
+                                Ast.Add,
+                                Ast.LiteralExpression(Ast.IntLiteral(456))
+                           )
+                        )
                     )
-                )
-            ])
+                ]
+            )
         )]
     Assert.That(result, Is.EqualTo(expected))
 
@@ -57,7 +60,7 @@ let ``can parse return void statement``() =
             return;
         }"
     let expected =
-        [Ast.FunctionDeclaration(Ast.Void, "main", [], (None, [Ast.ReturnStatement(None)])) ]
+        [Ast.FunctionDeclaration(Ast.Void, "main", [], ([], [Ast.ReturnStatement(None)])) ]
     Assert.That(result, Is.EqualTo(expected))
 
 [<Test>]
@@ -69,11 +72,14 @@ let ``can parse return expression statement``() =
     let expected =
         [Ast.FunctionDeclaration(
             Ast.Int, "foo", [],
-            (None, [
-                Ast.ReturnStatement(
-                    Some(Ast.LiteralExpression(Ast.IntLiteral(123)))
-                )
-            ])
+            (
+                [],
+                [
+                    Ast.ReturnStatement(
+                        Some(Ast.LiteralExpression(Ast.IntLiteral(123)))
+                    )
+                ]
+            )
         )]
     Assert.That(result, Is.EqualTo(expected))
 
@@ -87,21 +93,24 @@ let ``can parse parameters and expression``() =
         [Ast.FunctionDeclaration(
             Ast.Int, "foo",
             [Ast.ScalarParameter (Ast.Int, "a")],
-            (None, [
-                Ast.ReturnStatement(
-                    Some(
-                        Ast.BinaryExpression(
+            (
+                [],
+                [
+                    Ast.ReturnStatement(
+                        Some(
                             Ast.BinaryExpression(
-                                Ast.IdentifierExpression("a"),
-                                Ast.Multiply,
-                                Ast.LiteralExpression(Ast.IntLiteral(123))
-                            ),
-                            Ast.Add,
-                            Ast.LiteralExpression(Ast.IntLiteral(456))
+                                Ast.BinaryExpression(
+                                    Ast.IdentifierExpression("a"),
+                                    Ast.Multiply,
+                                    Ast.LiteralExpression(Ast.IntLiteral(123))
+                                ),
+                                Ast.Add,
+                                Ast.LiteralExpression(Ast.IntLiteral(456))
+                            )
                         )
                     )
-                )
-            ])
+                ]
+            )
         )]
     Assert.That(result, Is.EqualTo(expected))
 
@@ -121,22 +130,25 @@ let ``can parse if statement``() =
                 Ast.ScalarParameter (Ast.Int, "a")
                 Ast.ScalarParameter (Ast.Bool, "b")
             ],
-            (None, [
-                Ast.IfStatement(
-                    Ast.IdentifierExpression "b",
-                    Ast.ReturnStatement(Some(Ast.IdentifierExpression "a")),
-                    None
-                )
-                Ast.ReturnStatement(
-                    Some(
-                        Ast.BinaryExpression(
-                            Ast.LiteralExpression(Ast.IntLiteral(1234)),
-                            Ast.Multiply,
-                            Ast.IdentifierExpression("a")
+            (
+                [],
+                [
+                    Ast.IfStatement(
+                        Ast.IdentifierExpression "b",
+                        Ast.ReturnStatement(Some(Ast.IdentifierExpression "a")),
+                        None
+                    )
+                    Ast.ReturnStatement(
+                        Some(
+                            Ast.BinaryExpression(
+                                Ast.LiteralExpression(Ast.IntLiteral(1234)),
+                                Ast.Multiply,
+                                Ast.IdentifierExpression("a")
+                            )
                         )
                     )
-                )
-            ])
+                ]
+            )
         )]
     Assert.That(result, Is.EqualTo(expected))
     
@@ -157,29 +169,32 @@ let ``can parse complex arithmetic expression``() =
                     Ast.ScalarParameter (Ast.Int, "a")
                     Ast.ScalarParameter (Ast.Int, "b")
                 ],
-                (None, [
-                    Ast.ReturnStatement(
-                        Some(
-                            Ast.BinaryExpression(
+                (
+                    [],
+                    [
+                        Ast.ReturnStatement(
+                            Some(
                                 Ast.BinaryExpression(
                                     Ast.BinaryExpression(
                                         Ast.BinaryExpression(
-                                            Ast.LiteralExpression(Ast.IntLiteral(1234)),
-                                            Ast.Multiply,
-                                            Ast.IdentifierExpression("z")
+                                            Ast.BinaryExpression(
+                                                Ast.LiteralExpression(Ast.IntLiteral(1234)),
+                                                Ast.Multiply,
+                                                Ast.IdentifierExpression("z")
+                                            ),
+                                            Ast.Modulus,
+                                            Ast.LiteralExpression(Ast.IntLiteral(456))
                                         ),
-                                        Ast.Modulus,
-                                        Ast.LiteralExpression(Ast.IntLiteral(456))
+                                        Ast.Divide,
+                                        Ast.IdentifierExpression("b")
                                     ),
-                                    Ast.Divide,
-                                    Ast.IdentifierExpression("b")
-                                ),
-                                Ast.Add,
-                                Ast.LiteralExpression(Ast.IntLiteral(789))
+                                    Ast.Add,
+                                    Ast.LiteralExpression(Ast.IntLiteral(789))
+                                )
                             )
                         )
-                    )
-                ])
+                    ]
+                )
             )
         ]
     Assert.That(result, Is.EqualTo(expected))
@@ -196,24 +211,27 @@ let ``can parse logical negation and unary subtraction expression``() =
             Ast.Int,
             "foo",
             [ Ast.ScalarParameter (Ast.Bool, "b") ],
-            (None, [
-                Ast.IfStatement(
-                    Ast.UnaryExpression (Ast.LogicalNegate, Ast.IdentifierExpression("b")),
-                    Ast.ReturnStatement(
-                        Some(
-                            Ast.BinaryExpression(
-                                Ast.UnaryExpression(
-                                    Ast.Negate,
-                                    Ast.LiteralExpression(Ast.IntLiteral(1234))
-                                ),
-                                Ast.Multiply,
-                                Ast.IdentifierExpression("a")
+            (
+                [],
+                [
+                    Ast.IfStatement(
+                        Ast.UnaryExpression (Ast.LogicalNegate, Ast.IdentifierExpression("b")),
+                        Ast.ReturnStatement(
+                            Some(
+                                Ast.BinaryExpression(
+                                    Ast.UnaryExpression(
+                                        Ast.Negate,
+                                        Ast.LiteralExpression(Ast.IntLiteral(1234))
+                                    ),
+                                    Ast.Multiply,
+                                    Ast.IdentifierExpression("a")
+                                )
                             )
-                        )
-                    ),
-                    None
-                )
-            ])
+                        ),
+                        None
+                    )
+                ]
+            )
         )]
     Assert.That(result, Is.EqualTo(expected))
 
@@ -234,13 +252,16 @@ let ``can parse if / else statement``() =
                 Ast.ScalarParameter (Ast.Int, "a")
                 Ast.ScalarParameter (Ast.Bool, "b")
             ],
-            (None, [
-                Ast.IfStatement(
-                    Ast.IdentifierExpression "b",
-                    Ast.ReturnStatement(Some(Ast.IdentifierExpression "a")),
-                    Some(Ast.ReturnStatement(Some(Ast.LiteralExpression (Ast.IntLiteral 1))))
-                )
-            ])
+            (
+                [],
+                [
+                    Ast.IfStatement(
+                        Ast.IdentifierExpression "b",
+                        Ast.ReturnStatement(Some(Ast.IdentifierExpression "a")),
+                        Some(Ast.ReturnStatement(Some(Ast.LiteralExpression (Ast.IntLiteral 1))))
+                    )
+                ]
+            )
         )]
     Assert.That(result, Is.EqualTo(expected))
 
@@ -253,14 +274,40 @@ let ``can parse while statement``() =
         }"
     let expected =
         [Ast.FunctionDeclaration(
-            Ast.Int,
-            "main",
+            Ast.Int, "main",
             [ Ast.ScalarParameter (Ast.Bool, "b") ],
-            (None, [
-                Ast.WhileStatement(
-                    Ast.IdentifierExpression "b",
-                    Ast.ReturnStatement(Some(Ast.LiteralExpression (Ast.IntLiteral 1)))
-                )
-            ])
+            (
+                [],
+                [
+                    Ast.WhileStatement(
+                        Ast.IdentifierExpression "b",
+                        Ast.ReturnStatement(Some(Ast.LiteralExpression (Ast.IntLiteral 1)))
+                    )
+                ]
+            )
+        )]
+    Assert.That(result, Is.EqualTo(expected))
+
+[<Test>]
+let ``can parse local declarations in compound statements``() =
+    let result = Parser.parse "
+        int main(void) {
+            int a;
+            {
+                int b;
+            }
+        }"
+    let expected =
+        [Ast.FunctionDeclaration(
+            Ast.Int, "main", [],
+            (
+                [],
+                [
+                    Ast.CompoundStatement(
+                        [],
+                        []
+                    )
+                ]
+            )
         )]
     Assert.That(result, Is.EqualTo(expected))
