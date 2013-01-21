@@ -73,7 +73,7 @@ type NonTerminalWrapper<'T> (nonTerminal : INonTerminal<obj>) =
         let production = nonTerminal.AddProduction()
         new ProductionWrapper<'T>(production)
     
-    member x.AddProduction((part : SymbolWrapper<'a>)) =
+    member x.AddProduction (part : SymbolWrapper<'a>) =
         let production = nonTerminal.AddProduction(part.Symbol)
         new ProductionWrapper<'a,'T>(production)
     

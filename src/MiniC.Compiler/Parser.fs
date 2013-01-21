@@ -24,10 +24,11 @@ let optionalStatementList = nonTerminal<Statement list>()
 let statementList         = nonTerminal<Statement list>()
 let statement             = nonTerminal<Statement>()
 let expressionStatement   = nonTerminal<ExpressionStatement>()
-let expression            = nonTerminal<Expression>()
 let ifStatement           = nonTerminal<IfStatement>()
 let optionalElseStatement = nonTerminal<Statement option>()
 let returnStatement       = nonTerminal<Expression option>()
+let expression            = nonTerminal<Expression>()
+let binaryOperator        = nonTerminal<BinaryOperator>()
 
 // Terminals
 
@@ -59,6 +60,17 @@ let semicolon     = terminal      ";"
 let comma         = terminal      ","
 let percent       = terminal      "%"
 let forwardSlash  = terminal      "/"
+
+// Precedence
+
+let optionalElsePrecedenceGroup = configurator.LeftAssociative()
+
+configurator.LeftAssociative(downcast elseKeyword.Symbol) |> ignore
+
+let multiplicativePrecedence = configurator.LeftAssociative(downcast exclamation.Symbol, downcast plus.Symbol, downcast minus.Symbol)
+let additionPrecedence       = configurator.LeftAssociative(downcast asterisk.Symbol, downcast forwardSlash.Symbol, downcast percent.Symbol)
+
+let expressionPrecedenceGroup = configurator.LeftAssociative()
 
 // Productions
 
@@ -107,7 +119,6 @@ compoundStatement.AddProduction(openCurly, optionalStatementList, closeCurly)
 ifStatement.AddProduction(ifKeyword, openParen, expression, closeParen, statement, optionalElseStatement)
     .SetReduceFunction (fun _ _ c _ e f -> (c, e, f))
 
-let optionalElsePrecedenceGroup = configurator.LeftAssociative()
 let elseStatementProduction = optionalElseStatement.AddProduction(elseKeyword, statement)
 elseStatementProduction.SetReduceFunction (fun _ b -> Some b)
 elseStatementProduction.SetPrecedence optionalElsePrecedenceGroup
@@ -119,18 +130,9 @@ elseEpsilonProduction.SetPrecedence optionalElsePrecedenceGroup
 returnStatement.AddProduction(returnKeyword, expression, semicolon).SetReduceFunction (fun _ b _ -> Some b)
 returnStatement.AddProduction(returnKeyword, semicolon)            .SetReduceFunction (fun _ _ -> None)
 
-// TODO: Extract the binary operators into a binaryOperator non-terminal.
-// But can't seem to do it without a shift/reduce conflict.
-expression.AddProduction(expression, plus, expression)
-    .SetReduceFunction (fun a _ c -> Ast.BinaryExpression(a, Ast.Add, c))
-expression.AddProduction(expression, minus, expression)
-    .SetReduceFunction (fun a _ c -> Ast.BinaryExpression(a, Ast.Subtract, c))
-expression.AddProduction(expression, asterisk, expression)
-    .SetReduceFunction (fun a _ c -> Ast.BinaryExpression(a, Ast.Multiply, c))
-expression.AddProduction(expression, forwardSlash, expression)
-    .SetReduceFunction (fun a _ c -> Ast.BinaryExpression(a, Ast.Divide, c))
-expression.AddProduction(expression, percent, expression)
-    .SetReduceFunction (fun a _ c -> Ast.BinaryExpression(a, Ast.Modulus, c))
+let binaryExpressionProduction = expression.AddProduction(expression, binaryOperator, expression)
+binaryExpressionProduction.SetReduceFunction (fun a b c -> Ast.BinaryExpression(a, b, c))
+binaryExpressionProduction.SetPrecedence expressionPrecedenceGroup
 
 expression.AddProduction(exclamation, expression)
     .SetReduceFunction (fun _ b -> Ast.UnaryExpression(Ast.LogicalNegate, b))
@@ -142,9 +144,11 @@ expression.AddProduction(plus, expression)
 expression.AddProduction(identifier).SetReduceFunction (fun a -> Ast.IdentifierExpression a)
 expression.AddProduction(number)    .SetReduceFunction (fun a -> Ast.LiteralExpression a)
 
-configurator.LeftAssociative(downcast exclamation.Symbol, downcast plus.Symbol, downcast minus.Symbol) |> ignore
-configurator.LeftAssociative(downcast asterisk.Symbol, downcast forwardSlash.Symbol, downcast percent.Symbol) |> ignore
-configurator.LeftAssociative(downcast elseKeyword.Symbol) |> ignore
+binaryOperator.AddProduction(plus)        .SetReduceFunction (fun a -> Ast.Add)
+binaryOperator.AddProduction(minus)       .SetReduceFunction (fun a -> Ast.Subtract)
+binaryOperator.AddProduction(asterisk)    .SetReduceFunction (fun a -> Ast.Multiply)
+binaryOperator.AddProduction(forwardSlash).SetReduceFunction (fun a -> Ast.Divide)
+binaryOperator.AddProduction(percent)     .SetReduceFunction (fun a -> Ast.Modulus)
 
 configurator.LexerSettings.Ignore <- [|@"\s+"|]
 let parser = configurator.CreateParser()
