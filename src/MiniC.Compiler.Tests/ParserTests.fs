@@ -410,13 +410,13 @@ let ``can parse assignment expression``() =
 let ``can parse logical comparison expressions``() =
     let doTest operator binaryOperator =
         let code = (sprintf "
-            bool main() {
+            bool main(void) {
                 return true %s false;
             }" operator)
         let result = Parser.parse code
         let expected =
             [Ast.FunctionDeclaration(
-                Ast.Int, "main", [],
+                Ast.Bool, "main", [],
                 (
                     [],
                     [
