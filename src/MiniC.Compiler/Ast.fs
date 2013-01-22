@@ -32,6 +32,7 @@ and Statement =
     | IfStatement of IfStatement
     | WhileStatement of WhileStatement
     | ReturnStatement of Expression option
+    | BreakStatement
 
 and ExpressionStatement =
     | Expression of Expression
@@ -50,11 +51,19 @@ and IfStatement = Expression (* condition *) * Statement (* then *) * Statement 
 and WhileStatement = Expression * Statement
 
 and Expression =
-    | AssignmentExpression of Identifier * Expression
+    | AssignmentExpression of AssignmentExpression
     | BinaryExpression of Expression * BinaryOperator * Expression
     | UnaryExpression of UnaryOperator * Expression
     | IdentifierExpression of Identifier
+    | ArrayIdentifierExpression of Identifier * Expression
+    | FunctionCallExpression of Identifier * Arguments
+    | ArraySizeExpression of Identifier
     | LiteralExpression of Literal
+    | ArrayAllocationExpression of TypeSpec * Expression
+
+and AssignmentExpression =
+    | ScalarAssignmentExpression of Identifier * Expression
+    | ArrayAssignmentExpression of Identifier * Expression * Expression
 
 and BinaryOperator =
     | ConditionalOr
@@ -75,6 +84,8 @@ and UnaryOperator =
     | LogicalNegate
     | Negate
     | Identity
+
+and Arguments = Expression list
 
 and Literal =
     | BoolLiteral of bool

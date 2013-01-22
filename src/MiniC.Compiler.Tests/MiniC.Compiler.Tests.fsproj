@@ -39,6 +39,7 @@
   <ItemGroup>
     <None Include="packages.config" />
     <Compile Include="ParserTests.fs" />
+    <Compile Include="ILBuilderTests.fs" />
     <Compile Include="CompilerTests.fs" />
     <None Include="App.config" />
   </ItemGroup>

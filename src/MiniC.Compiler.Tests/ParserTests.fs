@@ -125,13 +125,16 @@ let ``can parse return expression statement``() =
 [<Test>]
 let ``can parse parameters and expression``() =
     let result = Parser.parse "
-        int foo(int a) {
+        int foo(int a, float b[]) {
             return a*123 + 456;
         }"
     let expected =
         [Ast.FunctionDeclaration(
             Ast.Int, "foo",
-            [Ast.ScalarParameter (Ast.Int, "a")],
+            [
+                Ast.ScalarParameter (Ast.Int, "a")
+                Ast.ArrayParameter (Ast.Float, "b")
+            ],
             (
                 [],
                 [
@@ -195,6 +198,7 @@ let ``can parse if statement``() =
 let ``can parse complex arithmetic expression``() =
     let result = Parser.parse "
         int z;
+        float y[];
 
         int baz(int a, int b) { 
             return 1234*z % 456/b + 789;
@@ -202,6 +206,7 @@ let ``can parse complex arithmetic expression``() =
     let expected =
         [
             Ast.VariableDeclaration(Ast.ScalarVariableDeclaration(Ast.Int, "z"))
+            Ast.VariableDeclaration(Ast.ArrayVariableDeclaration(Ast.Float, "y"))
             Ast.FunctionDeclaration(
                 Ast.Int, "baz",
                 [
@@ -305,11 +310,12 @@ let ``can parse if / else statement``() =
     Assert.That(result, Is.EqualTo(expected))
 
 [<Test>]
-let ``can parse while statement``() =
+let ``can parse while and break statements``() =
     let result = Parser.parse "
         int main(bool b) {
             while (b)
-                return 1;
+                break;
+            return 1;
         }"
     let expected =
         [Ast.FunctionDeclaration(
@@ -320,8 +326,9 @@ let ``can parse while statement``() =
                 [
                     Ast.WhileStatement(
                         Ast.IdentifierExpression "b",
-                        Ast.ReturnStatement(Some(Ast.LiteralExpression (Ast.IntLiteral 1)))
+                        Ast.BreakStatement
                     )
+                    Ast.ReturnStatement(Some(Ast.LiteralExpression (Ast.IntLiteral 1)))
                 ]
             )
         )]
@@ -334,8 +341,9 @@ let ``can parse local declarations in compound statements``() =
             int a;
             bool b;
             float c;
+            int d[];
             {
-                int d;
+                int e;
             }
         }"
     let expected =
@@ -346,10 +354,11 @@ let ``can parse local declarations in compound statements``() =
                     Ast.ScalarLocalDeclaration(Ast.Int, "a")
                     Ast.ScalarLocalDeclaration(Ast.Bool, "b")
                     Ast.ScalarLocalDeclaration(Ast.Float, "c")
+                    Ast.ArrayLocalDeclaration(Ast.Int, "d")
                 ],
                 [
                     Ast.CompoundStatement(
-                        [ Ast.ScalarLocalDeclaration(Ast.Int, "d") ],
+                        [ Ast.ScalarLocalDeclaration(Ast.Int, "e") ],
                         []
                     )
                 ]
@@ -368,48 +377,190 @@ let ``can parse function call``() =
             return func(i + 1, i - 1);
         }"
     let expected =
-        [Ast.FunctionDeclaration(
-            Ast.Int, "main",
-            [ Ast.ScalarParameter (Ast.Bool, "b") ],
-            (
-                [],
+        [
+            Ast.FunctionDeclaration(
+                Ast.Int, "func",
                 [
-                    Ast.WhileStatement(
-                        Ast.IdentifierExpression "b",
-                        Ast.ReturnStatement(Some(Ast.LiteralExpression (Ast.IntLiteral 1)))
-                    )
-                ]
+                    Ast.ScalarParameter(Ast.Int, "i")
+                    Ast.ScalarParameter(Ast.Int, "j")
+                ],
+                (
+                    [],
+                    [
+                        Ast.ReturnStatement(
+                            Some(
+                                Ast.BinaryExpression(
+                                    Ast.IdentifierExpression "i",
+                                    Ast.Add,
+                                    Ast.IdentifierExpression "j"
+                                )
+                            )
+                        )
+                    ]
+                )
             )
-        )]
+            Ast.FunctionDeclaration(
+                Ast.Int, "main",
+                [ Ast.ScalarParameter (Ast.Int, "i") ],
+                (
+                    [],
+                    [
+                        Ast.ReturnStatement(
+                            Some(
+                                Ast.FunctionCallExpression(
+                                    "func",
+                                    [
+                                        Ast.BinaryExpression(
+                                            Ast.IdentifierExpression("i"),
+                                            Ast.Add,
+                                            Ast.LiteralExpression(Ast.IntLiteral 1)
+                                        )
+                                        Ast.BinaryExpression(
+                                            Ast.IdentifierExpression("i"),
+                                            Ast.Subtract,
+                                            Ast.LiteralExpression(Ast.IntLiteral 1)
+                                        )
+                                    ]
+                                )
+                            )
+                        )
+                    ]
+                )
+            )
+        ]
     Assert.That(result, Is.EqualTo(expected))
 
 [<Test>]
-let ``can parse assignment expression``() =
+let ``can parse assignment expressions``() =
     let result = Parser.parse "
-        int main(int i) {
+        int main(int i, int j[], float k) {
             i = i + 1;
+            j[i % 2] = (i);
+            k = 1.25;
             return i;
         }"
     let expected =
         [Ast.FunctionDeclaration(
             Ast.Int, "main",
-            [ Ast.ScalarParameter (Ast.Int, "i") ],
+            [
+                Ast.ScalarParameter (Ast.Int, "i")
+                Ast.ArrayParameter (Ast.Int, "j")
+                Ast.ScalarParameter (Ast.Float, "k")
+            ],
             (
                 [],
                 [
                     Ast.ExpressionStatement(
                         Ast.Expression(
                             Ast.AssignmentExpression(
-                                "i",
-                                Ast.BinaryExpression(
-                                    Ast.IdentifierExpression("i"),
-                                    Ast.Add,
-                                    Ast.LiteralExpression(Ast.IntLiteral(1))
+                                Ast.ScalarAssignmentExpression(
+                                    "i",
+                                    Ast.BinaryExpression(
+                                        Ast.IdentifierExpression("i"),
+                                        Ast.Add,
+                                        Ast.LiteralExpression(Ast.IntLiteral(1))
+                                    )
+                                )
+                            )
+                        )
+                    )
+                    Ast.ExpressionStatement(
+                        Ast.Expression(
+                            Ast.AssignmentExpression(
+                                Ast.ArrayAssignmentExpression(
+                                    "j",
+                                    Ast.BinaryExpression(
+                                        Ast.IdentifierExpression "i",
+                                        Ast.Modulus,
+                                        Ast.LiteralExpression(Ast.IntLiteral 2)
+                                    ),
+                                    Ast.IdentifierExpression("i")
+                                )
+                            )
+                        )
+                    )
+                    Ast.ExpressionStatement(
+                        Ast.Expression(
+                            Ast.AssignmentExpression(
+                                Ast.ScalarAssignmentExpression(
+                                    "k",
+                                    Ast.LiteralExpression(Ast.FloatLiteral(1.25))
                                 )
                             )
                         )
                     )
                     Ast.ReturnStatement(Some(Ast.IdentifierExpression "i"))
+                ]
+            )
+        )]
+    Assert.That(result, Is.EqualTo(expected))
+
+[<Test>]
+let ``can parse array expressions``() =
+    let result = Parser.parse "
+        void main(int i, int j[]) {
+            i = j[i * (1 + 2)];
+            i = j.size;
+            j = new int[j.size * 2];
+        }"
+    let expected =
+        [Ast.FunctionDeclaration(
+            Ast.Void, "main",
+            [
+                Ast.ScalarParameter (Ast.Int, "i")
+                Ast.ArrayParameter (Ast.Int, "j")
+            ],
+            (
+                [],
+                [
+                    Ast.ExpressionStatement(
+                        Ast.Expression(
+                            Ast.AssignmentExpression(
+                                Ast.ScalarAssignmentExpression(
+                                    "i",
+                                    Ast.ArrayIdentifierExpression(
+                                        "j",
+                                        Ast.BinaryExpression(
+                                            Ast.IdentifierExpression("i"),
+                                            Ast.Multiply,
+                                            Ast.BinaryExpression(
+                                                Ast.LiteralExpression(Ast.IntLiteral 1),
+                                                Ast.Add,
+                                                Ast.LiteralExpression(Ast.IntLiteral 2)
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                    Ast.ExpressionStatement(
+                        Ast.Expression(
+                            Ast.AssignmentExpression(
+                                Ast.ScalarAssignmentExpression(
+                                    "i",
+                                    Ast.ArraySizeExpression "j"
+                                )
+                            )
+                        )
+                    )
+                    Ast.ExpressionStatement(
+                        Ast.Expression(
+                            Ast.AssignmentExpression(
+                                Ast.ScalarAssignmentExpression(
+                                    "j",
+                                    Ast.ArrayAllocationExpression(
+                                        Ast.Int,
+                                        Ast.BinaryExpression(
+                                            Ast.ArraySizeExpression "j",
+                                            Ast.Multiply,
+                                            Ast.LiteralExpression(Ast.IntLiteral 2)
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
                 ]
             )
         )]
@@ -451,3 +602,20 @@ let ``can parse logical comparison expressions``() =
     doTest ">=" Ast.GreaterEqual
     doTest ">"  Ast.Greater
     doTest "&&" Ast.ConditionalAnd
+
+[<Test>]
+let ``can parse and ignore comments``() =
+    let result = Parser.parse "
+        void main(void) {
+            return /* this is a mid-line comment */;
+            // This is another type of comment
+        }"
+    let expected =
+        [Ast.FunctionDeclaration(
+            Ast.Void, "main", [],
+            (
+                [],
+                [ Ast.ReturnStatement(None) ]
+            )
+        )]
+    Assert.That(result, Is.EqualTo(expected))

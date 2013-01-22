@@ -31,9 +31,12 @@ let localDeclaration          = nonTerminal<LocalDeclaration>()
 let ifStatement               = nonTerminal<IfStatement>()
 let optionalElseStatement     = nonTerminal<Statement option>()
 let returnStatement           = nonTerminal<Expression option>()
+let breakStatement            = nonTerminal<unit>()
 let expression                = nonTerminal<Expression>()
 let binaryOperator            = nonTerminal<BinaryOperator>()
 let unaryOperator             = nonTerminal<UnaryOperator>()
+let optionalArguments         = nonTerminal<Arguments>()
+let arguments                 = nonTerminal<Arguments>()
 
 // Terminals
 
@@ -47,22 +50,28 @@ let ifKeyword        = terminal      "if"
 let elseKeyword      = terminal      "else"
 let whileKeyword     = terminal      "while"
 let returnKeyword    = terminal      "return"
+let breakKeyword     = terminal      "break"
+let newKeyword       = terminal      "new"
+let sizeKeyword      = terminal      "size"
 let voidKeyword      = terminal      "void"
 let plus             = terminal      @"\+"
 let minus            = terminal      "-"
-let exclamation      = terminal      @"!"
+let exclamation      = terminal      "!"
 let asterisk         = terminal      @"\*"
-let number           = terminalParse @"\d+"  (fun s -> Ast.IntLiteral(int32 s))
-let trueLiteral      = terminalParse "true"  (fun s -> Ast.BoolLiteral(true))
-let falseLiteral     = terminalParse "false" (fun s -> Ast.BoolLiteral(false))
-let boolKeyword      = terminalParse "bool"  (fun s -> Ast.Bool)
-let intKeyword       = terminalParse "int"   (fun s -> Ast.Int)
-let floatKeyword     = terminalParse "float" (fun s -> Ast.Float)
-let identifier       = terminalParse @"\w+"  (fun s -> s)
+let intLiteral       = terminalParse @"\d+"      (fun s -> Ast.IntLiteral(int32 s))
+let floatLiteral     = terminalParse @"\d+\.\d+" (fun s -> Ast.FloatLiteral(float s))
+let trueLiteral      = terminalParse "true"      (fun s -> Ast.BoolLiteral(true))
+let falseLiteral     = terminalParse "false"     (fun s -> Ast.BoolLiteral(false))
+let boolKeyword      = terminalParse "bool"      (fun s -> Ast.Bool)
+let intKeyword       = terminalParse "int"       (fun s -> Ast.Int)
+let floatKeyword     = terminalParse "float"     (fun s -> Ast.Float)
+let identifier       = terminalParse "[a-zA-Z_][a-zA-Z_0-9]*"  (fun s -> s)
 let openParen        = terminal      @"\("
 let closeParen       = terminal      @"\)"
 let openCurly        = terminal      @"\{"
 let closeCurly       = terminal      @"\}"
+let openSquare       = terminal      @"\["
+let closeSquare      = terminal      @"\]"
 let semicolon        = terminal      ";"
 let comma            = terminal      ","
 let percent          = terminal      "%"
@@ -76,6 +85,7 @@ let openAngle        = terminal      "<"
 let closeAngleEquals = terminal      ">="
 let closeAngle       = terminal      ">"
 let doubleAmpersands = terminal      "&&"
+let period           = terminal      @"\."
 
 // Precedence
 
@@ -126,6 +136,8 @@ typeSpec.AddProduction(floatKeyword).SetReduceToFirst()
 
 variableDeclaration.AddProduction(typeSpec, identifier, semicolon)
     .SetReduceFunction (fun a b _ -> Ast.ScalarVariableDeclaration(a, b))
+variableDeclaration.AddProduction(typeSpec, identifier, openSquare, closeSquare, semicolon)
+    .SetReduceFunction (fun a b _ _ _ -> Ast.ArrayVariableDeclaration(a, b))
 
 functionDeclaration.AddProduction(typeSpec, identifier, openParen, parameters, closeParen, compoundStatement)
     .SetReduceFunction (fun a b _ d _ f -> (a, b, d, f))
@@ -136,7 +148,8 @@ parameters.AddProduction(voidKeyword).SetReduceFunction (fun _ -> [])
 parameterList.AddProduction(parameterList, comma, parameter).SetReduceFunction (fun a _ c -> a @ [c])
 parameterList.AddProduction(parameter)                      .SetReduceFunction (fun a -> [a])
 
-parameter.AddProduction(typeSpec, identifier).SetReduceFunction (fun a b -> Ast.ScalarParameter(a, b))
+parameter.AddProduction(typeSpec, identifier)                         .SetReduceFunction (fun a b -> Ast.ScalarParameter(a, b))
+parameter.AddProduction(typeSpec, identifier, openSquare, closeSquare).SetReduceFunction (fun a b _ _ -> Ast.ArrayParameter(a, b))
 
 optionalStatementList.AddProduction(statementList).SetReduceToFirst()
 optionalStatementList.AddProduction()             .SetReduceFunction (fun () -> [])
@@ -149,6 +162,7 @@ statement.AddProduction(compoundStatement)  .SetReduceFunction (fun a -> Ast.Com
 statement.AddProduction(ifStatement)        .SetReduceFunction (fun a -> Ast.IfStatement a)
 statement.AddProduction(whileStatement)     .SetReduceFunction (fun a -> Ast.WhileStatement a)
 statement.AddProduction(returnStatement)    .SetReduceFunction (fun a -> Ast.ReturnStatement a)
+statement.AddProduction(breakStatement)     .SetReduceFunction (fun a -> Ast.BreakStatement)
 
 expressionStatement.AddProduction(expression, semicolon).SetReduceFunction (fun a _ -> Ast.Expression a)
 expressionStatement.AddProduction(semicolon)            .SetReduceFunction (fun _ -> Ast.Nop)
@@ -165,7 +179,8 @@ optionalLocalDeclarations.AddProduction()                 .SetReduceFunction (fu
 localDeclarations.AddProduction(localDeclarations, localDeclaration).SetReduceFunction (fun a b -> a @ [b])
 localDeclarations.AddProduction(localDeclaration)                   .SetReduceFunction (fun a -> [a])
 
-localDeclaration.AddProduction(typeSpec, identifier, semicolon).SetReduceFunction (fun a b c -> Ast.ScalarLocalDeclaration(a, b))
+localDeclaration.AddProduction(typeSpec, identifier, semicolon)                         .SetReduceFunction (fun a b _ -> Ast.ScalarLocalDeclaration(a, b))
+localDeclaration.AddProduction(typeSpec, identifier, openSquare, closeSquare, semicolon).SetReduceFunction (fun a b _ _ _ -> Ast.ArrayLocalDeclaration(a, b))
 
 ifStatement.AddProduction(ifKeyword, openParen, expression, closeParen, statement, optionalElseStatement)
     .SetReduceFunction (fun _ _ c _ e f -> (c, e, f))
@@ -181,7 +196,12 @@ elseEpsilonProduction.SetPrecedence optionalElsePrecedenceGroup
 returnStatement.AddProduction(returnKeyword, expression, semicolon).SetReduceFunction (fun _ b _ -> Some b)
 returnStatement.AddProduction(returnKeyword, semicolon)            .SetReduceFunction (fun _ _ -> None)
 
-expression.AddProduction(identifier, singleEquals, expression).SetReduceFunction (fun a _ c -> Ast.AssignmentExpression(a, c))
+breakStatement.AddProduction(breakKeyword, semicolon).SetReduceFunction (fun _ _ -> ())
+
+expression.AddProduction(identifier, singleEquals, expression)
+    .SetReduceFunction (fun a _ c -> Ast.AssignmentExpression(Ast.ScalarAssignmentExpression(a, c)))
+expression.AddProduction(identifier, openSquare, expression, closeSquare, singleEquals, expression)
+    .SetReduceFunction (fun a _ c _ _ f -> Ast.AssignmentExpression(Ast.ArrayAssignmentExpression(a, c, f)))
 
 let binaryExpressionProduction = expression.AddProduction(expression, binaryOperator, expression)
 binaryExpressionProduction.SetReduceFunction (fun a b c -> Ast.BinaryExpression(a, b, c))
@@ -191,10 +211,23 @@ let unaryExpressionProduction = expression.AddProduction(unaryOperator, expressi
 unaryExpressionProduction.SetReduceFunction (fun a b -> Ast.UnaryExpression(a, b))
 unaryExpressionProduction.SetPrecedence unaryExpressionPrecedenceGroup
 
-expression.AddProduction(identifier)  .SetReduceFunction (fun a -> Ast.IdentifierExpression a)
+expression.AddProduction(openParen, expression, closeParen).SetReduceFunction (fun _ b _ -> b)
+
+expression.AddProduction(identifier).SetReduceFunction (fun a -> Ast.IdentifierExpression a)
+expression.AddProduction(identifier, openSquare, expression, closeSquare)
+    .SetReduceFunction (fun a _ c _ -> Ast.ArrayIdentifierExpression(a, c))
+expression.AddProduction(identifier, openParen, optionalArguments, closeParen)
+    .SetReduceFunction (fun a _ c _ -> Ast.FunctionCallExpression(a, c))
+expression.AddProduction(identifier, period, sizeKeyword)
+    .SetReduceFunction (fun a _ _ -> Ast.ArraySizeExpression a)
+
 expression.AddProduction(trueLiteral) .SetReduceFunction (fun a -> Ast.LiteralExpression a)
 expression.AddProduction(falseLiteral).SetReduceFunction (fun a -> Ast.LiteralExpression a)
-expression.AddProduction(number)      .SetReduceFunction (fun a -> Ast.LiteralExpression a)
+expression.AddProduction(intLiteral)  .SetReduceFunction (fun a -> Ast.LiteralExpression a)
+expression.AddProduction(floatLiteral).SetReduceFunction (fun a -> Ast.LiteralExpression a)
+
+expression.AddProduction(newKeyword, typeSpec, openSquare, expression, closeSquare)
+    .SetReduceFunction (fun _ b _ d _ -> Ast.ArrayAllocationExpression(b, d))
 
 binaryOperator.AddProduction(doublePipes)     .SetReduceFunction (fun a -> Ast.ConditionalOr)
 binaryOperator.AddProduction(doubleEquals)    .SetReduceFunction (fun a -> Ast.Equal)
@@ -214,7 +247,17 @@ unaryOperator.AddProduction(exclamation).SetReduceFunction (fun a -> Ast.Logical
 unaryOperator.AddProduction(minus)      .SetReduceFunction (fun a -> Ast.Negate)
 unaryOperator.AddProduction(plus)       .SetReduceFunction (fun a -> Ast.Identity)
 
-configurator.LexerSettings.Ignore <- [|@"\s+"|]
+optionalArguments.AddProduction(arguments).SetReduceToFirst()
+optionalArguments.AddProduction()         .SetReduceFunction (fun () -> [])
+
+arguments.AddProduction(arguments, comma, expression).SetReduceFunction (fun a _ c -> a @ [c])
+arguments.AddProduction(expression)                  .SetReduceFunction (fun a -> [a])
+
+// Ignore whitespace and comments
+configurator.LexerSettings.Ignore <- [| @"\s+"; @"/\*[^(\*/)]*\*/"; @"//[^\n]*\n" |]
+
+
+
 let parser = configurator.CreateParser()
 
 let parse (s : string) = parser.Parse(s)
