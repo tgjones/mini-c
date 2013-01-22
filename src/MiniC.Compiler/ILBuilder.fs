@@ -26,25 +26,48 @@ and processLiteralExpression =
 
 and processExpression =
     function
+    | Ast.AssignmentExpression(x) -> processAssignmentExpression x
     | Ast.BinaryExpression(a, b, c) -> processBinaryExpression (a, b, c)
     | Ast.LiteralExpression(x) -> processLiteralExpression x
     | _ -> failwith "Not implemented"
 
-let processReturnStatement =
+and processAssignmentExpression =
+    function
+    | Ast.ScalarAssignmentExpression(i, e) -> failwith "Not implemented"
+    | _ -> failwith "Not implemented"
+
+and processReturnStatement =
     function
     | Some(x) -> (processExpression x) @ [ Ret ]
     | None    -> [ Ret ]
 
-let processStatement =
+and processStatement =
     function
+    | Ast.ExpressionStatement(x) -> processExpressionStatement x
+    | Ast.CompoundStatement(_, s) -> s |> List.collect processStatement
     | Ast.ReturnStatement(x) -> processReturnStatement x
+    | _ -> failwith "Not implemented"
+
+and processExpressionStatement =
+    function
+    | Ast.Expression(x) -> processExpression x
+    | Ast.Nop -> []
+
+let processLocalDeclaration =
+    function
+    | Ast.ScalarLocalDeclaration(t, i) ->
+        {
+            ILVariable.Type = getType t; 
+            Name = i;
+        }
     | _ -> failwith "Not implemented"
 
 let processFunctionDeclaration (returnType, name, parameters, (localDeclarations, statements)) =
     {
         Name       = name;
         ReturnType = getType returnType;
-        Parameters = [];
+        Parameters = localDeclarations |> List.map processLocalDeclaration;
+        Locals     = [];
         Body       = statements |> List.collect processStatement;
     }
 

@@ -26,6 +26,7 @@ let ``can build int return value``() =
                         Name       = "main";
                         ReturnType = typeof<unit>;
                         Parameters = [];
+                        Locals     = [];
                         Body       = [ IL.Ldc_I4(123); IL.Ret ];
                     }
                 ];
@@ -64,6 +65,7 @@ let ``can build binary expression``() =
                         Name       = "main";
                         ReturnType = typeof<unit>;
                         Parameters = [];
+                        Locals     = [];
                         Body       = [ IL.Ldc_I4(123); IL.Ldc_I4(456); IL.Add; IL.Ret ];
                     }
                 ];

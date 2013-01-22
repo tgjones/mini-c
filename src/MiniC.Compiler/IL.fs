@@ -12,11 +12,12 @@ and ILMethod =
     {
         Name       : string;
         ReturnType : Type;
-        Parameters : ILParameter list;
+        Parameters : ILVariable list;
+        Locals     : ILVariable list;
         Body       : ILOpCode list;
     }
 
-and ILParameter =
+and ILVariable =
     {
         Type : Type;
         Name : string;
