@@ -260,4 +260,4 @@ configurator.LexerSettings.Ignore <- [| @"\s+"; @"/\*[^(\*/)]*\*/"; @"//[^\n]*\n
 
 let parser = configurator.CreateParser()
 
-let parse (s : string) = parser.Parse(s)
+let parse (s : string) = parser.Parse(s) :?> Program

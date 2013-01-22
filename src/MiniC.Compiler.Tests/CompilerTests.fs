@@ -6,19 +6,8 @@ open MiniC.Compiler
 
 [<Test>]
 let ``can generate and run .NET assembly``() =
-    let parseTree =
-        [Ast.FunctionDeclaration(
-            Ast.Int, "main", [],
-            (
-                [],
-                [
-                    Ast.ReturnStatement(
-                        Some(Ast.LiteralExpression(Ast.IntLiteral(123)))
-                    )
-                ]
-            )
-        )]
-    let (compiledType, entryPoint) = Compiler.compileToMemory (new AssemblyName "Foo") parseTree
+    let code = "int main(void) { return 123; }"
+    let (compiledType, entryPoint) = Compiler.compileToMemory (new AssemblyName "Foo") code
     
     Assert.That(compiledType, Is.Not.Null)
     Assert.That(entryPoint, Is.Not.Null)

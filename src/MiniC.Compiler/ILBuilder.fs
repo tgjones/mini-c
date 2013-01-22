@@ -14,12 +14,32 @@ let getParameterType =
     | Ast.ScalarParameter(typeSpec, _) -> getType typeSpec
     | Ast.ArrayParameter(typeSpec, _)  -> failwith "Not implemented"
 
+let processLiteralExpression =
+    function
+    | Ast.IntLiteral(x) -> [ Ldc_I4(x) ]
+    | _ -> failwith "Not implemented"
+
+let processExpression =
+    function
+    | Ast.LiteralExpression(x) -> processLiteralExpression x
+    | _ -> failwith "Not implemented"
+
+let processReturnStatement =
+    function
+    | Some(x) -> (processExpression x) @ [ Ret ]
+    | None    -> [ Ret ]
+
+let processStatement =
+    function
+    | Ast.ReturnStatement(x) -> processReturnStatement x
+    | _ -> failwith "Not implemented"
+
 let processFunctionDeclaration (returnType, name, parameters, (localDeclarations, statements)) =
     {
         Name       = name;
         ReturnType = getType returnType;
         Parameters = [];
-        Body       = [ Ret ];
+        Body       = statements |> List.collect processStatement;
     }
 
 let processDeclaration = 

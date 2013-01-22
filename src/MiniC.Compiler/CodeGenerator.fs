@@ -28,3 +28,5 @@ let generateType (moduleBuilder : ModuleBuilder) (ilClass : ILClass) moduleName 
 
     ilClass.Fields  |> List.iter (generateField  typeBuilder)
     ilClass.Methods |> List.iter (generateMethod typeBuilder)
+
+    typeBuilder.CreateType()

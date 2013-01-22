@@ -7,14 +7,14 @@ open MiniC.Compiler
 let ``can parse empty main method``() =
     let result = Parser.parse "void main(void) { }"
     let expected =
-        [Ast.FunctionDeclaration(Ast.Void, "main", [], ([], [])) ]
+        [ Ast.FunctionDeclaration(Ast.Void, "main", [], ([], [])) ]
     Assert.That(result, Is.EqualTo(expected))
 
 [<Test>]
 let ``can parse empty main method with random whitespace``() =
     let result = Parser.parse "   void  main (  void ) {   }   "
     let expected =
-        [Ast.FunctionDeclaration(Ast.Void, "main", [], ([], [])) ]
+        [ Ast.FunctionDeclaration(Ast.Void, "main", [], ([], [])) ]
     Assert.That(result, Is.EqualTo(expected))
 
 [<Test>]
@@ -24,7 +24,7 @@ let ``can parse nearly-empty main method``() =
             ;
         }"
     let expected =
-        [Ast.FunctionDeclaration(Ast.Void, "main", [], ([], [Ast.ExpressionStatement(Ast.Nop)])) ]
+        [ Ast.FunctionDeclaration(Ast.Void, "main", [], ([], [Ast.ExpressionStatement(Ast.Nop)])) ]
     Assert.That(result, Is.EqualTo(expected))
 
 [<Test>]
