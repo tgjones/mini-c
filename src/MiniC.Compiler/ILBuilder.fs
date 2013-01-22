@@ -24,18 +24,18 @@ let processFunctionDeclaration (returnType, name, parameters, (localDeclarations
 
 let processDeclaration = 
     function
-    | Ast.FunctionDeclaration(x, y, z, w) -> processFunctionDeclaration (x, y, z, w)
+    | Ast.FunctionDeclaration(x) -> processFunctionDeclaration x
     | Ast.VariableDeclaration(x) -> failwith "Not implemented"
 
-//let buildClass (program : Ast.Program) =
-//    let functionDeclarations =
-//        program
-//        |> List.filter (fun x ->
-//            match x with
-//            | Ast.FunctionDeclaration(_, _, _, _) as a -> a
-//            | _ -> false)
-//    
-//    {
-//        Fields  = [];
-//        Methods = functionDeclarations |> List.map processFunctionDeclaration;
-//    }
+let buildClass (program : Ast.Program) =
+    let functionDeclarations =
+        program
+        |> List.choose (fun x ->
+            match x with
+            | Ast.FunctionDeclaration(_, _, _, _ as a) -> Some a
+            | _ -> None)
+    
+    {
+        Fields  = [];
+        Methods = functionDeclarations |> List.map processFunctionDeclaration;
+    }
