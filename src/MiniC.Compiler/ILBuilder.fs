@@ -14,13 +14,19 @@ let getParameterType =
     | Ast.ScalarParameter(typeSpec, _) -> getType typeSpec
     | Ast.ArrayParameter(typeSpec, _)  -> failwith "Not implemented"
 
-let processLiteralExpression =
+let rec processBinaryExpression =
+    function
+    | l, Ast.Add, r -> List.concat [ (processExpression l); (processExpression r); [ Add ] ]
+    | _ -> failwith "Not implemented"
+
+and processLiteralExpression =
     function
     | Ast.IntLiteral(x) -> [ Ldc_I4(x) ]
     | _ -> failwith "Not implemented"
 
-let processExpression =
+and processExpression =
     function
+    | Ast.BinaryExpression(a, b, c) -> processBinaryExpression (a, b, c)
     | Ast.LiteralExpression(x) -> processLiteralExpression x
     | _ -> failwith "Not implemented"
 

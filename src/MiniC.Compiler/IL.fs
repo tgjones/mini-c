@@ -23,6 +23,7 @@ and ILParameter =
     }
 
 and ILOpCode =
+    | Add
     | Ldc_I4 of int
     | Ldfld of ILField
     | Ret
