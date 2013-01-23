@@ -35,10 +35,10 @@ let ``can find declaration in symbol table``() =
                 )
             )
         ]
-    let symbolTable = SymbolTable.create program
+    let symbolTable = SymbolEnvironment.create program
 
     // Act.
-    let result = SymbolTable.findDeclaration identifierExpression symbolTable
+    let result = SymbolEnvironment.findDeclaration identifierExpression symbolTable
 
     // Assert.
-    Assert.That(result, Is.EqualTo(identifierExpression))
+    Assert.That(result, Is.EqualTo(localDeclarationA2))

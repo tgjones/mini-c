@@ -1,6 +1,6 @@
 ﻿module MiniC.Compiler.Ast
 
-type IDeclaration = interface end
+type IVariableDeclaration = interface end
 
 type Program = Declaration list
 
@@ -17,6 +17,7 @@ and TypeSpec =
 and VariableDeclaration = 
     | ScalarVariableDeclaration of TypeSpec * Identifier
     | ArrayVariableDeclaration of TypeSpec * Identifier
+    with interface IVariableDeclaration end
 
 and FunctionDeclaration = TypeSpec * Identifier * Parameters * CompoundStatement
 
@@ -27,6 +28,7 @@ and Parameters = Parameter list
 and Parameter =
     | ScalarParameter of TypeSpec * Identifier
     | ArrayParameter of TypeSpec * Identifier
+    with interface IVariableDeclaration end
 
 and Statement =
     | ExpressionStatement of ExpressionStatement
@@ -47,6 +49,7 @@ and LocalDeclarations = LocalDeclaration list
 and LocalDeclaration =
     | ScalarLocalDeclaration of TypeSpec * Identifier
     | ArrayLocalDeclaration of TypeSpec * Identifier
+    with interface IVariableDeclaration end
 
 and IfStatement = Expression (* condition *) * Statement (* then *) * Statement option (* else *)
 
