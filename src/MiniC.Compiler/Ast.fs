@@ -1,5 +1,7 @@
 ﻿module MiniC.Compiler.Ast
 
+type IDeclaration = interface end
+
 type Program = Declaration list
 
 and Declaration =
