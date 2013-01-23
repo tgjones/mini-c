@@ -4,7 +4,7 @@ open System
 
 type ILClass = 
     {
-        Fields  : ILField list;
+        Fields  : ILVariable list;
         Methods : ILMethod list;
     }
 
@@ -26,11 +26,5 @@ and ILVariable =
 and ILOpCode =
     | Add
     | Ldc_I4 of int
-    | Ldfld of ILField
+    | Ldfld of ILVariable
     | Ret
-
-and ILField =
-    {
-        Type : Type;
-        Name : string;
-    }

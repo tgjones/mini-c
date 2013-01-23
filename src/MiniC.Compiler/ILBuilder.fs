@@ -33,7 +33,7 @@ and processExpression =
 
 and processAssignmentExpression =
     function
-    | Ast.ScalarAssignmentExpression(i, e) -> failwith "Not implemented"
+    | Ast.ScalarAssignmentExpression(i, e) -> List.concat [ (processExpression e); [ Ldfld(i) ] ]
     | _ -> failwith "Not implemented"
 
 and processReturnStatement =
