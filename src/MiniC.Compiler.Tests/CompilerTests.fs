@@ -14,7 +14,7 @@ let cleanup() =
 [<Test>]
 let canCompileAndRunAssemblyInMemory() =
     let code = "int main(void) { return 123; }"
-    let (_, compiledType, entryPoint) = Compiler.compileToMemory (new AssemblyName "Foo") code
+    let (compiledType, entryPoint) = Compiler.compileToMemory (new AssemblyName "Foo") code
     
     Assert.That(compiledType, Is.Not.Null)
     Assert.That(entryPoint, Is.Not.Null)
@@ -24,6 +24,7 @@ let canCompileAndRunAssemblyInMemory() =
     Assert.That(result, Is.EqualTo(123))
 
 [<TestCase("test1.minic", Result = -5)>]
+//[<TestCase("test2.minic", Result = 10)>]
 let canCompileSaveAndExecuteConsoleApplicationWithCorrectReturnValue sourceFile =
     let code = File.ReadAllText(Path.Combine("Sources", sourceFile))
     let targetFileName = Path.Combine("Sources", Path.GetFileNameWithoutExtension(sourceFile) + ".exe")

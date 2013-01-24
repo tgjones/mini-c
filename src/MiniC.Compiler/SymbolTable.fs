@@ -48,7 +48,7 @@ module SymbolEnvironment =
         member x.AddDeclaration declaration = stack.Peek().AddDeclaration declaration
 
     let create program =
-        let result = new SymbolEnvironment()
+        let result = new SymbolEnvironment(HashIdentity.Reference)
         let symbolTable = new SymbolTable()
 
         let rec scanDeclaration =
@@ -114,8 +114,12 @@ module SymbolEnvironment =
     let findDeclaration expression (symbolEnvironment : SymbolEnvironment) =
         let identifier =
             match expression with
+            | AssignmentExpression(ae) ->
+                match ae with
+                | ScalarAssignmentExpression(i, _) -> i
+                | ArrayAssignmentExpression(i, _, _) -> i
             | IdentifierExpression(i) -> i
-            | ArrayIdentifierExpression(i, e) -> i
+            | ArrayIdentifierExpression(i, _) -> i
             | ArraySizeExpression(i) -> i
             | _ -> failwith "Expression doesn't include an identifier"
 

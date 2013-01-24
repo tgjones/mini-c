@@ -11,7 +11,8 @@ let ``can find declaration in symbol table``() =
     let localDeclarationB1 = Ast.ScalarLocalDeclaration(Ast.Bool, "b")
     let localDeclarationA2 = Ast.ScalarLocalDeclaration(Ast.Int, "a")
     let localDeclarationC1 = Ast.ArrayLocalDeclaration(Ast.Int, "c")
-    let identifierExpression = Ast.IdentifierExpression "a"
+    let identifierExpression1 = Ast.IdentifierExpression "a"
+    let identifierExpression2 = Ast.IdentifierExpression "a"
     let program =
         [
             variableDeclarationA;
@@ -29,16 +30,19 @@ let ``can find declaration in symbol table``() =
                                 localDeclarationA2; // Shadows previous local
                                 localDeclarationC1
                             ],
-                            [ Ast.ExpressionStatement (Ast.Expression identifierExpression) ]
-                        )
+                            [ Ast.ExpressionStatement (Ast.Expression identifierExpression1) ]
+                        );
+                        Ast.ExpressionStatement (Ast.Expression identifierExpression2)
                     ]
                 )
             )
         ]
-    let symbolTable = SymbolEnvironment.create program
+    let symbolEnvironment = SymbolEnvironment.create program
 
     // Act.
-    let result = SymbolEnvironment.findDeclaration identifierExpression symbolTable
+    let result1 = SymbolEnvironment.findDeclaration identifierExpression1 symbolEnvironment
+    let result2 = SymbolEnvironment.findDeclaration identifierExpression2 symbolEnvironment
 
     // Assert.
-    Assert.That(result, Is.EqualTo(localDeclarationA2))
+    Assert.That(result1, Is.SameAs(localDeclarationA2))
+    Assert.That(result2, Is.SameAs(localDeclarationA1))
