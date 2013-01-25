@@ -25,6 +25,7 @@ let canCompileAndRunAssemblyInMemory() =
 
 [<TestCase("test1.minic", Result = -5)>]
 [<TestCase("test2.minic", Result = 55)>]
+[<TestCase("test3.minic", Result = 3)>]
 let canCompileSaveAndExecuteConsoleApplicationWithCorrectReturnValue sourceFile =
     let code = File.ReadAllText(Path.Combine("Sources", sourceFile))
     let targetFileName = Path.Combine("Sources", Path.GetFileNameWithoutExtension(sourceFile) + ".exe")
