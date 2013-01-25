@@ -23,15 +23,24 @@ and ILVariable =
         Name  : string;
     }
 
+and ILLabel = int
+
 and ILOpCode =
     | Add
+    | Br of ILLabel
+    | Brtrue of ILLabel
+    | Call of string
+    | Ceq
+    | Cgt
+    | Clt
+    | Label of ILLabel
     | Ldarg of int16
     | Ldc_I4 of int
-    | Ldfld of ILVariable
+    | Ldsfld of ILVariable
     | Ldloc of int16
     | Mul
     | Ret
     | Starg of int16
-    | Stfld of ILVariable
+    | Stsfld of ILVariable
     | Stloc of int16
     | Sub

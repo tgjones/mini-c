@@ -1,7 +1,12 @@
-﻿int main(void) {
-	int i;
-	int j;
-	i = 1;
-	j = 2 * 3;
-	return i - j;
+﻿int fib(int n)
+{
+	if (n == 0) 
+		return 0;
+	if (n == 1)
+		return 1;
+     return fib(n - 1) + fib(n - 2);
+}
+
+int main(void) {
+	return fib(10);
 }

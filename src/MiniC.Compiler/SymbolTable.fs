@@ -93,9 +93,9 @@ module SymbolEnvironment =
             match expression with
             | AssignmentExpression(ae) ->
                 match ae with
-                | ScalarAssignmentExpression(i, e) ->
+                | ScalarAssignmentExpression(_, e) ->
                     scanExpression e
-                | ArrayAssignmentExpression(i, e1, e2) ->
+                | ArrayAssignmentExpression(_, e1, e2) ->
                     scanExpression e1
                     scanExpression e2
             | BinaryExpression(e1, _, e2) ->
@@ -105,6 +105,8 @@ module SymbolEnvironment =
             | ArrayIdentifierExpression(_, e)
             | ArrayAllocationExpression(_, e) ->
                 scanExpression e
+            | FunctionCallExpression(_, args) ->
+                args |> List.iter scanExpression
             | _ -> ()
             result.Add(expression, symbolTable.CurrentScope)
 
@@ -127,4 +129,4 @@ module SymbolEnvironment =
         if symbolEnvironment.TryGetValue(expression, &symbolScope) then
             symbolScope.FindDeclaration identifier
         else
-            failwithf "Could not find expression in symbol environment"
+            failwithf "Could not find expression in symbol environment: %s" (expression.ToString())

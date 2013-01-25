@@ -12,6 +12,7 @@ type ILBuilder(symbolEnvironment) =
     let variableMappings = new Dictionary<Ast.IVariableDeclaration, ILVariableScope>(HashIdentity.Reference)
     let mutable argumentIndex = 0s // TODO: Won't work for multiple function declarations
     let mutable localIndex = 0s // TODO: Won't work for multiple compound statements
+    let mutable labelIndex = 0 // TODO: Won't work for multiple function declarations
 
     let lookupILVariableScope expression =
         let declaration = SymbolEnvironment.findDeclaration expression symbolEnvironment
@@ -29,11 +30,22 @@ type ILBuilder(symbolEnvironment) =
         | Ast.ScalarParameter(typeSpec, _) -> getType typeSpec
         | Ast.ArrayParameter(typeSpec, _)  -> failwith "Not implemented"
 
-    let rec processBinaryExpression =
+    let makeLabel() =
+        let result = labelIndex
+        labelIndex <- labelIndex + 1
+        result
+
+    let rec processBinaryExpression (l, op, r) =
+        List.concat [ (processExpression l); (processExpression r); [ processBinaryOperator op ] ]
+
+    and processBinaryOperator =
         function
-        | l, Ast.Add, r -> List.concat [ (processExpression l); (processExpression r); [ Add ] ]
-        | l, Ast.Multiply, r -> List.concat [ (processExpression l); (processExpression r); [ Mul ] ]
-        | l, Ast.Subtract, r -> List.concat [ (processExpression l); (processExpression r); [ Sub ] ]
+        | Ast.Add -> Add
+        | Ast.Multiply -> Mul
+        | Ast.Subtract -> Sub
+        | Ast.Equal -> Ceq
+        | Ast.Greater -> Cgt
+        | Ast.Less -> Clt
         | _ -> failwith "Not implemented"
 
     and processLiteralExpression =
@@ -43,13 +55,13 @@ type ILBuilder(symbolEnvironment) =
 
     and processIdentifierLoad expression =
         match lookupILVariableScope expression with
-        | FieldScope(v)    -> [ Ldfld v ]
+        | FieldScope(v)    -> [ Ldsfld v ]
         | ArgumentScope(i) -> [ Ldarg i ]
         | LocalScope(i)    -> [ Ldloc i ]
 
     and processIdentifierStore expression =
         match lookupILVariableScope expression with
-        | FieldScope(v)    -> [ Stfld v ]
+        | FieldScope(v)    -> [ Stsfld v ]
         | ArgumentScope(i) -> [ Starg i ]
         | LocalScope(i)    -> [ Stloc i ]
 
@@ -62,6 +74,7 @@ type ILBuilder(symbolEnvironment) =
         | Ast.BinaryExpression(a, b, c) -> processBinaryExpression (a, b, c)
         | Ast.LiteralExpression(x) -> processLiteralExpression x
         | Ast.IdentifierExpression(i) -> processIdentifierExpression expression i
+        | Ast.FunctionCallExpression(i, a) -> processFunctionCallExpression (i, a)
         | _ -> failwith "Not implemented"
 
     and processAssignmentExpression expression =
@@ -69,6 +82,10 @@ type ILBuilder(symbolEnvironment) =
         | Ast.ScalarAssignmentExpression(i, e) as ae ->
             List.concat [ (processExpression e); processIdentifierStore expression ]
         | _ -> failwith "Not implemented"
+
+    and processFunctionCallExpression (identifier, arguments) =
+        List.concat [ arguments |> List.collect processExpression
+                      [ Call(identifier) ] ]
 
     and processReturnStatement =
         function
@@ -79,8 +96,27 @@ type ILBuilder(symbolEnvironment) =
         function
         | Ast.ExpressionStatement(x) -> processExpressionStatement x
         | Ast.CompoundStatement(_, s) -> s |> List.collect processStatement
+        | Ast.IfStatement(e, s1, Some(s2)) ->
+            let thenLabel = makeLabel()
+            let endLabel = makeLabel()
+            List.concat [ processExpression e
+                          [ Brtrue thenLabel ]
+                          processStatement s2
+                          [ Br endLabel ]
+                          [ Label thenLabel ]
+                          processStatement s1
+                          [ Label endLabel ] ]
+        | Ast.IfStatement(e, s1, None) ->
+            let thenLabel = makeLabel()
+            let endLabel = makeLabel()
+            List.concat [ processExpression e
+                          [ Brtrue thenLabel ]
+                          [ Br endLabel ]
+                          [ Label thenLabel ]
+                          processStatement s1
+                          [ Label endLabel ] ]
         | Ast.ReturnStatement(x) -> processReturnStatement x
-        | _ -> failwith "Not implemented"
+        | _ as x -> failwith ("Not implemented: " + x.ToString())
 
     and processExpressionStatement =
         function

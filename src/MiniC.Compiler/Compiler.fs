@@ -7,7 +7,7 @@ open System.Reflection.Emit
 
 let compile (assemblyBuilder : AssemblyBuilder) code =
     let assemblyName = assemblyBuilder.GetName()
-    let moduleBuilder = assemblyBuilder.DefineDynamicModule (assemblyName.Name, assemblyName.Name + ".exe")
+    let moduleBuilder = assemblyBuilder.DefineDynamicModule(assemblyName.Name, assemblyName.Name + ".exe", true)
 
     let program = Parser.parse code
     let symbolEnvironment = SymbolEnvironment.create program
