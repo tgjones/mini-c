@@ -13,6 +13,7 @@ type ILBuilder(symbolEnvironment) =
     let mutable argumentIndex = 0s // TODO: Won't work for multiple function declarations
     let mutable localIndex = 0s // TODO: Won't work for multiple compound statements
     let mutable labelIndex = 0 // TODO: Won't work for multiple function declarations
+    let mutable currentWhileStatementEndLabel = ILLabel()
 
     let lookupILVariableScope expression =
         let declaration = SymbolEnvironment.findDeclaration expression symbolEnvironment
@@ -120,14 +121,17 @@ type ILBuilder(symbolEnvironment) =
         | Ast.WhileStatement(e, s) ->
             let startLabel = makeLabel()
             let conditionLabel = makeLabel()
+            let endLabel = makeLabel()
+            currentWhileStatementEndLabel <- endLabel
             List.concat [ [ Br conditionLabel ]
                           [ Label startLabel ]
                           processStatement s
                           [ Label conditionLabel ]
                           processExpression e
-                          [ Brtrue startLabel ] ]
+                          [ Brtrue startLabel ]
+                          [ Label endLabel ] ]
         | Ast.ReturnStatement(x) -> processReturnStatement x
-        | _ as x -> failwith ("Not implemented: " + x.ToString())
+        | Ast.BreakStatement -> [ Br currentWhileStatementEndLabel ]
 
     and processExpressionStatement =
         function
