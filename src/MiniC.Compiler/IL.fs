@@ -36,6 +36,7 @@ and ILOpCode =
     | Label of ILLabel
     | Ldarg of int16
     | Ldc_I4 of int
+    | Ldc_R8 of float
     | Ldsfld of ILVariable
     | Ldloc of int16
     | Mul

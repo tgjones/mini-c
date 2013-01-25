@@ -38,12 +38,13 @@ type MethodGenerator(typeBuilder : TypeBuilder, ilMethod : ILMethod,
         | Label(l)  -> ilGenerator.MarkLabel(getLabel l)
         | Ldarg(i)  -> ilGenerator.Emit(OpCodes.Ldarg, i)
         | Ldc_I4(i) -> ilGenerator.Emit(OpCodes.Ldc_I4, i)
+        | Ldc_R8(r) -> ilGenerator.Emit(OpCodes.Ldc_R8, r)
         | Ldloc(i)  -> ilGenerator.Emit(OpCodes.Ldloc, i)
-        | Ldsfld(v) -> ilGenerator.Emit(OpCodes.Ldfld, fieldMappings.[v])
+        | Ldsfld(v) -> ilGenerator.Emit(OpCodes.Ldsfld, fieldMappings.[v])
         | Mul       -> ilGenerator.Emit(OpCodes.Mul)
         | Ret       -> ilGenerator.Emit(OpCodes.Ret)
         | Starg(i)  -> ilGenerator.Emit(OpCodes.Starg, i)
-        | Stsfld(v) -> ilGenerator.Emit(OpCodes.Stfld, fieldMappings.[v])
+        | Stsfld(v) -> ilGenerator.Emit(OpCodes.Stsfld, fieldMappings.[v])
         | Stloc(i)  -> ilGenerator.Emit(OpCodes.Stloc, i)
         | Sub       -> ilGenerator.Emit(OpCodes.Sub)
 
@@ -60,6 +61,14 @@ type MethodGenerator(typeBuilder : TypeBuilder, ilMethod : ILMethod,
 
         ilMethod.Locals |> List.iter (emitLocal ilGenerator)
         ilMethod.Body |> List.iter (emitOpCode ilGenerator)
+
+        let rec last =
+            function
+            | head :: [] -> head
+            | head :: tail -> last tail
+            | _ -> failwith "Empty list."
+        if (last ilMethod.Body) <> Ret then // TODO: Maybe don't need to do this?
+            ilGenerator.Emit(OpCodes.Ret)
 
 type CodeGenerator(moduleBuilder : ModuleBuilder, ilClass : ILClass, moduleName : string) =
     let fieldMappings = new FieldMappingDictionary()

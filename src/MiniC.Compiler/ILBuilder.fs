@@ -20,7 +20,7 @@ type ILBuilder(symbolEnvironment) =
 
     let getType =
         function
-        | Ast.Void  -> typeof<unit>
+        | Ast.Void  -> typeof<System.Void>
         | Ast.Bool  -> typeof<bool>
         | Ast.Int   -> typeof<int>
         | Ast.Float -> typeof<float>
@@ -50,7 +50,9 @@ type ILBuilder(symbolEnvironment) =
 
     and processLiteralExpression =
         function
-        | Ast.IntLiteral(x) -> [ Ldc_I4(x) ]
+        | Ast.IntLiteral(x)   -> [ Ldc_I4(x) ]
+        | Ast.FloatLiteral(x) -> [ Ldc_R8(x) ]
+        | Ast.BoolLiteral(x)  -> [ (if x then Ldc_I4(1) else Ldc_I4(0)) ]
         | _ -> failwith "Not implemented"
 
     and processIdentifierLoad expression =
@@ -115,6 +117,15 @@ type ILBuilder(symbolEnvironment) =
                           [ Label thenLabel ]
                           processStatement s1
                           [ Label endLabel ] ]
+        | Ast.WhileStatement(e, s) ->
+            let startLabel = makeLabel()
+            let conditionLabel = makeLabel()
+            List.concat [ [ Br conditionLabel ]
+                          [ Label startLabel ]
+                          processStatement s
+                          [ Label conditionLabel ]
+                          processExpression e
+                          [ Brtrue startLabel ] ]
         | Ast.ReturnStatement(x) -> processReturnStatement x
         | _ as x -> failwith ("Not implemented: " + x.ToString())
 
@@ -147,29 +158,50 @@ type ILBuilder(symbolEnvironment) =
             v
         | _ -> failwith "Not implemented"
 
+    let rec collectLocalDeclarations =
+        function
+        | Ast.CompoundStatement(localDeclarations, statements) ->
+             List.concat [ localDeclarations |> List.map processLocalDeclaration;
+                           statements |> List.collect collectLocalDeclarations ]
+        | _ -> []
+
     let processFunctionDeclaration (returnType, name, parameters, (localDeclarations, statements)) =
         {
             Name       = name;
             ReturnType = getType returnType;
             Parameters = parameters |> List.map processParameter;
-            Locals     = localDeclarations |> List.map processLocalDeclaration;
+            Locals     = List.concat [ localDeclarations |> List.map processLocalDeclaration;
+                                       statements |> List.collect collectLocalDeclarations ]
             Body       = statements |> List.collect processStatement;
         }
 
-    let processDeclaration = 
+    let processVariableDeclaration =
         function
-        | Ast.FunctionDeclaration(x) -> processFunctionDeclaration x
-        | Ast.VariableDeclaration(x) -> failwith "Not implemented"
+        | Ast.ScalarVariableDeclaration(t, i) as d -> 
+            let v = {
+                ILVariable.Type = getType t; 
+                Name = i;
+            }
+            variableMappings.Add(d, FieldScope(v))
+            v
+        | Ast.ArrayVariableDeclaration(t, i) -> failwith "Not implemented"
 
     member x.BuildClass (program : Ast.Program) =
+        let variableDeclarations =
+            program
+            |> List.choose (fun x ->
+                match x with
+                | Ast.VariableDeclaration(x) -> Some(x)
+                | _ -> None)
+    
         let functionDeclarations =
             program
             |> List.choose (fun x ->
                 match x with
                 | Ast.FunctionDeclaration(_, _, _, _ as a) -> Some a
                 | _ -> None)
-    
+
         {
-            Fields  = [];
+            Fields  = variableDeclarations |> List.map processVariableDeclaration;
             Methods = functionDeclarations |> List.map processFunctionDeclaration;
         }
