@@ -167,7 +167,10 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
     and processExpressionStatement =
         function
         | Ast.Expression(x) ->
-            processExpression x
+            let isNotVoid = semanticAnalysisResult.ExpressionTypes.[x] <> Ast.Void
+            List.concat [ processExpression x
+                          (if isNotVoid then [ Pop ] else []) ]
+                
         | Ast.Nop -> []
 
     let processVariableDeclaration (mutableIndex : byref<_>) f =
