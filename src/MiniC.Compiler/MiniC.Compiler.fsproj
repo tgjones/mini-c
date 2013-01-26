@@ -40,8 +40,9 @@
     <Compile Include="Ast.fs" />
     <Compile Include="ParsingUtilities.fs" />
     <Compile Include="Parser.fs" />
-    <Compile Include="SymbolTable.fs" />
     <Compile Include="AstUtilities.fs" />
+    <Compile Include="SymbolTable.fs" />
+    <Compile Include="SemanticAnalysis.fs" />
     <Compile Include="IL.fs" />
     <Compile Include="ILBuilder.fs" />
     <Compile Include="CodeGenerator.fs" />

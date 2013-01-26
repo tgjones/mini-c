@@ -3,119 +3,110 @@
 open System.Collections.Generic
 open Ast
 
-type SymbolScope(parent : SymbolScope option) =
+type private SymbolScope(parent : SymbolScope option) =
     let mutable list = List.empty<VariableDeclaration>
-    let declaresIdentifier identifier =
+    let declaresIdentifier (identifierRef : IdentifierRef) =
         function
-        | ScalarVariableDeclaration(t, i) -> i = identifier
-        | ArrayVariableDeclaration(t, i) -> i = identifier
+        | ScalarVariableDeclaration(t, i) -> i = identifierRef.Identifier
+        | ArrayVariableDeclaration(t, i) -> i = identifierRef.Identifier
 
     member x.AddDeclaration declaration =
         list <- declaration :: list
 
-    member x.FindDeclaration identifier =
-        let found = List.tryFind (fun x -> declaresIdentifier identifier x) list
+    member x.FindDeclaration identifierRef =
+        let found = List.tryFind (fun x -> declaresIdentifier identifierRef x) list
         match found with
         | Some(d) -> d
         | None ->
             match parent with
-            | Some(ss) -> ss.FindDeclaration identifier
-            | None -> failwithf "Could not find declaration of identifier %s" identifier
+            | Some(ss) -> ss.FindDeclaration identifierRef
+            | None -> failwithf "Could not find declaration of identifier %s" identifierRef.Identifier
 
-type SymbolEnvironment = Dictionary<Expression, SymbolScope>
+type private SymbolScopeStack() =
+    let stack = new Stack<SymbolScope>()
+    do stack.Push(new SymbolScope(None))
 
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module SymbolEnvironment =
-    type SymbolTable() =
-        let stack = new Stack<SymbolScope>()
-        do stack.Push(new SymbolScope(None))
+    member x.CurrentScope = stack.Peek()
 
-        member x.CurrentScope = stack.Peek()
+    member x.Push() = stack.Push(new SymbolScope(Some(stack.Peek())))
+    member x.Pop() = stack.Pop() |> ignore
+    member x.AddDeclaration declaration = stack.Peek().AddDeclaration declaration
 
-        member x.Push() = stack.Push(new SymbolScope(Some(stack.Peek())))
-        member x.Pop() = stack.Pop() |> ignore
-        member x.AddDeclaration declaration = stack.Peek().AddDeclaration declaration
+type SymbolTable(program) as self =
+    inherit Dictionary<IdentifierRef, VariableDeclaration>(HashIdentity.Reference)
 
-    let create program =
-        let result = new SymbolEnvironment(HashIdentity.Reference)
-        let symbolTable = new SymbolTable()
+    let symbolScopeStack = new SymbolScopeStack()
 
-        let rec scanDeclaration =
-            function
-            | StaticVariableDeclaration(x) -> symbolTable.AddDeclaration x
-            | FunctionDeclaration(x)       -> scanFunctionDeclaration x
+    let rec scanDeclaration =
+        function
+        | StaticVariableDeclaration(x) -> symbolScopeStack.AddDeclaration x
+        | FunctionDeclaration(x)       -> scanFunctionDeclaration x
 
-        and scanFunctionDeclaration (_, _, parameters, compoundStatement) =
-            symbolTable.Push()
-            parameters |> List.iter symbolTable.AddDeclaration
-            scanCompoundStatement compoundStatement
-            symbolTable.Pop() |> ignore
+    and scanFunctionDeclaration (_, _, parameters, compoundStatement) =
+        symbolScopeStack.Push()
+        parameters |> List.iter symbolScopeStack.AddDeclaration
+        scanCompoundStatement compoundStatement
+        symbolScopeStack.Pop() |> ignore
 
-        and scanCompoundStatement (localDeclarations, statements) =
-            symbolTable.Push()
-            localDeclarations |> List.iter (fun d -> symbolTable.AddDeclaration d)
-            statements |> List.iter scanStatement
-            symbolTable.Pop() |> ignore
+    and scanCompoundStatement (localDeclarations, statements) =
+        symbolScopeStack.Push()
+        localDeclarations |> List.iter (fun d -> symbolScopeStack.AddDeclaration d)
+        statements |> List.iter scanStatement
+        symbolScopeStack.Pop() |> ignore
 
-        and scanStatement =
-            function
-            | ExpressionStatement(es) ->
-                match es with
-                | Expression(e) -> scanExpression e
-                | Nop -> ()
-            | CompoundStatement(x) -> scanCompoundStatement x
-            | IfStatement(e, s1, Some(s2)) ->
+    and scanStatement =
+        function
+        | ExpressionStatement(es) ->
+            match es with
+            | Expression(e) -> scanExpression e
+            | Nop -> ()
+        | CompoundStatement(x) -> scanCompoundStatement x
+        | IfStatement(e, s1, Some(s2)) ->
+            scanExpression e
+            scanStatement s1
+            scanStatement s2
+        | IfStatement(e, s1, None) ->
+            scanExpression e
+            scanStatement s1
+        | WhileStatement(e, s) ->
+            scanExpression e
+            scanStatement s
+        | ReturnStatement(Some(e)) ->
+            scanExpression e
+        | _ -> ()
+
+    and addIdentifierMapping identifierRef =
+        let declaration = symbolScopeStack.CurrentScope.FindDeclaration identifierRef
+        self.Add(identifierRef, declaration)
+
+    and scanExpression expression =
+        match expression with
+        | AssignmentExpression(ae) ->
+            match ae with
+            | ScalarAssignmentExpression(i, e) ->
+                addIdentifierMapping i
                 scanExpression e
-                scanStatement s1
-                scanStatement s2
-            | IfStatement(e, s1, None) ->
-                scanExpression e
-                scanStatement s1
-            | WhileStatement(e, s) ->
-                scanExpression e
-                scanStatement s
-            | ReturnStatement(Some(e)) ->
-                scanExpression e
-            | _ -> ()
-
-        and scanExpression expression =
-            match expression with
-            | AssignmentExpression(ae) ->
-                match ae with
-                | ScalarAssignmentExpression(_, e) ->
-                    scanExpression e
-                | ArrayAssignmentExpression(_, e1, e2) ->
-                    scanExpression e1
-                    scanExpression e2
-            | BinaryExpression(e1, _, e2) ->
+            | ArrayAssignmentExpression(i, e1, e2) ->
+                addIdentifierMapping i
                 scanExpression e1
                 scanExpression e2
-            | UnaryExpression(_, e)
-            | ArrayIdentifierExpression(_, e)
-            | ArrayAllocationExpression(_, e) ->
-                scanExpression e
-            | FunctionCallExpression(_, args) ->
-                args |> List.iter scanExpression
-            | _ -> ()
-            result.Add(expression, symbolTable.CurrentScope)
+        | BinaryExpression(e1, _, e2) ->
+            scanExpression e1
+            scanExpression e2
+        | UnaryExpression(_, e) ->
+            scanExpression e
+        | IdentifierExpression(i) ->
+            addIdentifierMapping i
+        | ArrayIdentifierExpression(i, e) ->
+            addIdentifierMapping i
+            scanExpression e
+        | FunctionCallExpression(i, args) ->
+            addIdentifierMapping i
+            args |> List.iter scanExpression
+        | ArraySizeExpression(i) ->
+            addIdentifierMapping i
+        | LiteralExpression(l) -> ()
+        | ArrayAllocationExpression(_, e) ->
+            scanExpression e
 
-        program |> List.iter scanDeclaration
-        result
-
-    let findDeclaration expression (symbolEnvironment : SymbolEnvironment) =
-        let identifier =
-            match expression with
-            | AssignmentExpression(ae) ->
-                match ae with
-                | ScalarAssignmentExpression(i, _) -> i
-                | ArrayAssignmentExpression(i, _, _) -> i
-            | IdentifierExpression(i) -> i
-            | ArrayIdentifierExpression(i, _) -> i
-            | ArraySizeExpression(i) -> i
-            | _ -> failwith "Expression doesn't include an identifier"
-
-        let mutable symbolScope = new SymbolScope(None)
-        if symbolEnvironment.TryGetValue(expression, &symbolScope) then
-            symbolScope.FindDeclaration identifier
-        else
-            failwithf "Could not find expression in symbol environment: %s" (expression.ToString())
+    do program |> List.iter scanDeclaration

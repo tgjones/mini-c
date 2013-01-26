@@ -11,14 +11,14 @@ type ILVariableScope =
 
 type VariableMappingDictionary = Dictionary<Ast.VariableDeclaration, ILVariableScope>
 
-type ILMethodBuilder(symbolEnvironment, variableMappings : VariableMappingDictionary) =
+type ILMethodBuilder(symbolTable : SymbolTable, variableMappings : VariableMappingDictionary) =
     let mutable argumentIndex = 0s
     let mutable localIndex = 0s
     let mutable labelIndex = 0
     let mutable currentWhileStatementEndLabel = ILLabel()
 
-    let lookupILVariableScope expression =
-        let declaration = SymbolEnvironment.findDeclaration expression symbolEnvironment
+    let lookupILVariableScope identifierRef =
+        let declaration = symbolTable.[identifierRef]
         variableMappings.[declaration]
 
     let makeLabel() =
@@ -72,20 +72,20 @@ type ILMethodBuilder(symbolEnvironment, variableMappings : VariableMappingDictio
         | Ast.FloatLiteral(x) -> [ Ldc_R8(x) ]
         | Ast.BoolLiteral(x)  -> [ (if x then Ldc_I4(1) else Ldc_I4(0)) ]
 
-    and processIdentifierLoad expression =
-        match lookupILVariableScope expression with
+    and processIdentifierLoad identifierRef =
+        match lookupILVariableScope identifierRef with
         | FieldScope(v)    -> [ Ldsfld v ]
         | ArgumentScope(i) -> [ Ldarg i ]
         | LocalScope(i)    -> [ Ldloc i ]
 
-    and processIdentifierStore expression =
-        match lookupILVariableScope expression with
+    and processIdentifierStore identifierRef =
+        match lookupILVariableScope identifierRef with
         | FieldScope(v)    -> [ Stsfld v ]
         | ArgumentScope(i) -> [ Starg i ]
         | LocalScope(i)    -> [ Stloc i ]
 
-    and processIdentifierExpression expression identifier =
-        processIdentifierLoad expression
+    and processIdentifierExpression identifierRef =
+        processIdentifierLoad identifierRef
 
     and processExpression expression =
         match expression with
@@ -93,7 +93,7 @@ type ILMethodBuilder(symbolEnvironment, variableMappings : VariableMappingDictio
         | Ast.BinaryExpression(a, b, c) -> processBinaryExpression (a, b, c)
         | Ast.UnaryExpression(a, b) -> processUnaryExpression (a, b)
         | Ast.LiteralExpression(x) -> processLiteralExpression x
-        | Ast.IdentifierExpression(i) -> processIdentifierExpression expression i
+        | Ast.IdentifierExpression(i) -> processIdentifierExpression i
         | Ast.FunctionCallExpression(i, a) -> processFunctionCallExpression (i, a)
         | _ -> failwith "Not implemented"
 
@@ -102,7 +102,7 @@ type ILMethodBuilder(symbolEnvironment, variableMappings : VariableMappingDictio
         | Ast.ScalarAssignmentExpression(i, e) as ae ->
             List.concat [ processExpression e
                           [ Dup ]
-                          processIdentifierStore expression ]
+                          processIdentifierStore i ]
         | _ -> failwith "Not implemented"
 
     and processUnaryExpression (operator, expression) =
@@ -115,9 +115,9 @@ type ILMethodBuilder(symbolEnvironment, variableMappings : VariableMappingDictio
         | Ast.Negate        -> [ Neg ]
         | Ast.Identity      -> [ ]
 
-    and processFunctionCallExpression (identifier, arguments) =
+    and processFunctionCallExpression (identifierRef, arguments) =
         List.concat [ arguments |> List.collect processExpression
-                      [ Call(identifier) ] ]
+                      [ Call(identifierRef.Identifier) ] ]
 
     and processReturnStatement =
         function
@@ -202,7 +202,7 @@ type ILMethodBuilder(symbolEnvironment, variableMappings : VariableMappingDictio
             Body       = statements |> List.collect processStatement;
         }
 
-type ILBuilder(symbolEnvironment) =
+type ILBuilder(symbolTable) =
     let variableMappings = new VariableMappingDictionary(HashIdentity.Reference)
 
     let processVariableDeclaration =
@@ -232,7 +232,7 @@ type ILBuilder(symbolEnvironment) =
                 | _ -> None)
 
         let processFunctionDeclaration functionDeclaration =
-            let ilMethodBuilder = new ILMethodBuilder(symbolEnvironment, variableMappings)
+            let ilMethodBuilder = new ILMethodBuilder(symbolTable, variableMappings)
             ilMethodBuilder.BuildMethod functionDeclaration
 
         {

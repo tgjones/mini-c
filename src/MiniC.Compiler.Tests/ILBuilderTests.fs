@@ -16,8 +16,8 @@ let ``can build int return value``() =
                 ])
             )
         ]
-    let symbolEnvironment = SymbolEnvironment.create program
-    let ilBuilder = new ILBuilder(symbolEnvironment)
+    let symbolTable = new SymbolTable(program)
+    let ilBuilder = new ILBuilder(symbolTable)
     let result = ilBuilder.BuildClass program
     let expected =
         {
@@ -57,8 +57,8 @@ let ``can build binary expression``() =
                 )
             )
         ]
-    let symbolEnvironment = SymbolEnvironment.create program
-    let ilBuilder = new ILBuilder(symbolEnvironment)
+    let symbolTable = new SymbolTable(program)
+    let ilBuilder = new ILBuilder(symbolTable)
     let result = ilBuilder.BuildClass program
     let expected =
         {

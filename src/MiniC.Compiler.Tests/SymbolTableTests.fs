@@ -11,8 +11,10 @@ let ``can find declaration in symbol table``() =
     let localDeclarationB1 = Ast.ScalarVariableDeclaration(Ast.Bool, "b")
     let localDeclarationA2 = Ast.ScalarVariableDeclaration(Ast.Int, "a")
     let localDeclarationC1 = Ast.ArrayVariableDeclaration(Ast.Int, "c")
-    let identifierExpression1 = Ast.IdentifierExpression "a"
-    let identifierExpression2 = Ast.IdentifierExpression "a"
+    let identifier1 = Ast.IdentifierRef "a"
+    let identifier2 = Ast.IdentifierRef "a"
+    let identifierExpression1 = Ast.IdentifierExpression identifier1
+    let identifierExpression2 = Ast.IdentifierExpression identifier2
     let program =
         [
             variableDeclarationA;
@@ -37,11 +39,11 @@ let ``can find declaration in symbol table``() =
                 )
             )
         ]
-    let symbolEnvironment = SymbolEnvironment.create program
+    let symbolTable = new SymbolTable(program)
 
     // Act.
-    let result1 = SymbolEnvironment.findDeclaration identifierExpression1 symbolEnvironment
-    let result2 = SymbolEnvironment.findDeclaration identifierExpression2 symbolEnvironment
+    let result1 = symbolTable.[identifier1]
+    let result2 = symbolTable.[identifier2]
 
     // Assert.
     Assert.That(result1, Is.SameAs(localDeclarationA2))

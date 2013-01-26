@@ -22,6 +22,13 @@ and Identifier = string
 
 and Parameters = VariableDeclaration list
 
+and IdentifierRef(identifier : Identifier) =
+    member x.Identifier = identifier
+    override x.Equals obj =
+        obj :? IdentifierRef && (obj :?> IdentifierRef).Identifier = identifier
+    override x.GetHashCode() =
+        identifier.GetHashCode()
+
 and Statement =
     | ExpressionStatement of ExpressionStatement
     | CompoundStatement of CompoundStatement
@@ -46,16 +53,16 @@ and Expression =
     | AssignmentExpression of AssignmentExpression
     | BinaryExpression of Expression * BinaryOperator * Expression
     | UnaryExpression of UnaryOperator * Expression
-    | IdentifierExpression of Identifier
-    | ArrayIdentifierExpression of Identifier * Expression
-    | FunctionCallExpression of Identifier * Arguments
-    | ArraySizeExpression of Identifier
+    | IdentifierExpression of IdentifierRef
+    | ArrayIdentifierExpression of IdentifierRef * Expression
+    | FunctionCallExpression of IdentifierRef * Arguments
+    | ArraySizeExpression of IdentifierRef
     | LiteralExpression of Literal
     | ArrayAllocationExpression of TypeSpec * Expression
 
 and AssignmentExpression =
-    | ScalarAssignmentExpression of Identifier * Expression
-    | ArrayAssignmentExpression of Identifier * Expression * Expression
+    | ScalarAssignmentExpression of IdentifierRef * Expression
+    | ArrayAssignmentExpression of IdentifierRef * Expression * Expression
 
 and BinaryOperator =
     | ConditionalOr

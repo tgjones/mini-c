@@ -10,9 +10,9 @@ let compile (assemblyBuilder : AssemblyBuilder) code =
     let moduleBuilder = assemblyBuilder.DefineDynamicModule(assemblyName.Name, assemblyName.Name + ".exe", true)
 
     let program = Parser.parse code
-    let symbolEnvironment = SymbolEnvironment.create program
+    let symbolTable = new SymbolTable(program)
 
-    let ilBuilder = new ILBuilder(symbolEnvironment)
+    let ilBuilder = new ILBuilder(symbolTable)
     let ilClass = ilBuilder.BuildClass program
 
     let codeGenerator = new CodeGenerator(moduleBuilder, ilClass, assemblyName.Name)
