@@ -1,7 +1,6 @@
 ﻿namespace MiniC.Compiler
 
 open System.Collections.Generic
-open AstUtilities
 open SemanticAnalysis
 open IL
 
@@ -12,10 +11,34 @@ type private ILVariableScope =
 
 type private VariableMappingDictionary = Dictionary<Ast.VariableDeclaration, ILVariableScope>
 
+module ILBuilderUtilities =
+    let typeOf =
+        function
+        | Ast.Void  -> typeof<System.Void>
+        | Ast.Bool  -> typeof<bool>
+        | Ast.Int   -> typeof<int>
+        | Ast.Float -> typeof<float>
+
+    let createILVariable =
+        function
+        | Ast.ScalarVariableDeclaration(t, i) as d ->
+            {
+                ILVariable.Type = typeOf t; 
+                Name = i;
+            }
+        | Ast.ArrayVariableDeclaration(t, i) as d ->
+            {
+                ILVariable.Type = (typeOf t).MakeArrayType(); 
+                Name = i;
+            }
+
+open ILBuilderUtilities
+
 type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
                      variableMappings : VariableMappingDictionary) =
     let mutable argumentIndex = 0s
     let mutable localIndex = 0s
+    let arrayAssignmentLocals = Dictionary<Ast.AssignmentExpression, int16>()
     let mutable labelIndex = 0
     let mutable currentWhileStatementEndLabel = ILLabel()
 
@@ -86,18 +109,19 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
         | ArgumentScope(i) -> [ Starg i ]
         | LocalScope(i)    -> [ Stloc i ]
 
-    and processIdentifierExpression identifierRef =
-        processIdentifierLoad identifierRef
-
     and processExpression expression =
         match expression with
         | Ast.AssignmentExpression(x) -> processAssignmentExpression expression x
         | Ast.BinaryExpression(a, b, c) -> processBinaryExpression (a, b, c)
         | Ast.UnaryExpression(a, b) -> processUnaryExpression (a, b)
-        | Ast.LiteralExpression(x) -> processLiteralExpression x
         | Ast.IdentifierExpression(i) -> processIdentifierExpression i
+        | Ast.ArrayIdentifierExpression(i, e) -> processArrayIdentifierExpression (i, e)
         | Ast.FunctionCallExpression(i, a) -> processFunctionCallExpression (i, a)
-        | _ -> failwith "Not implemented"
+        | Ast.ArraySizeExpression(i) -> processArraySizeExpression i
+        | Ast.LiteralExpression(x) -> processLiteralExpression x
+        | Ast.ArrayAllocationExpression(t, e) ->
+            List.concat [ processExpression e
+                          [ Newarr (typeOf t) ] ]
 
     and processAssignmentExpression expression =
         function
@@ -105,7 +129,13 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
             List.concat [ processExpression e
                           [ Dup ]
                           processIdentifierStore i ]
-        | _ -> failwith "Not implemented"
+        | Ast.ArrayAssignmentExpression(i, e1, e2) as ae ->
+            List.concat [ processIdentifierLoad i
+                          processExpression e1
+                          processExpression e2
+                          [ Dup ]
+                          [ Stloc arrayAssignmentLocals.[ae] ]
+                          [ Stelem (typeOf (semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec i)) ] ]
 
     and processUnaryExpression (operator, expression) =
         List.concat [ processExpression expression
@@ -113,13 +143,25 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
 
     and processUnaryOperator =
         function
-        | Ast.LogicalNegate -> [ Ldc_I4(0); Ceq ]
+        | Ast.LogicalNegate -> [ Ldc_I4 0; Ceq ]
         | Ast.Negate        -> [ Neg ]
         | Ast.Identity      -> [ ]
 
+    and processIdentifierExpression identifierRef =
+        processIdentifierLoad identifierRef
+
+    and processArrayIdentifierExpression (identifierRef, expression) =
+        List.concat [ processIdentifierLoad identifierRef
+                      processExpression expression
+                      [ Ldelem (typeOf (semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec identifierRef)) ] ]
+
     and processFunctionCallExpression (identifier, arguments) =
         List.concat [ arguments |> List.collect processExpression
-                      [ Call(identifier) ] ]
+                      [ Call identifier ] ]
+
+    and processArraySizeExpression identifierRef =
+        List.concat [ processIdentifierLoad identifierRef
+                      [ Ldlen ] ]
 
     and processReturnStatement =
         function
@@ -167,36 +209,78 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
     and processExpressionStatement =
         function
         | Ast.Expression(x) ->
+            let expressionOpCodes = processExpression x
+            let arrayAssignmentPopOpCode =
+                match x with
+                | Ast.AssignmentExpression(ae) ->
+                    match ae with
+                    | Ast.ArrayAssignmentExpression(i, e1, e2) -> [ Ldloc arrayAssignmentLocals.[ae] ]
+                    | _ -> []
+                | _ -> []
             let isNotVoid = semanticAnalysisResult.ExpressionTypes.[x] <> Ast.Void
+            let popOpCode = if List.isEmpty arrayAssignmentPopOpCode && isNotVoid then [ Pop ] else []
             List.concat [ processExpression x
-                          (if isNotVoid then [ Pop ] else []) ]
+                          arrayAssignmentPopOpCode
+                          popOpCode ]
                 
         | Ast.Nop -> []
 
-    let processVariableDeclaration (mutableIndex : byref<_>) f =
-        function
-        | Ast.ScalarVariableDeclaration(t, i) as d ->
-            let v = {
-                ILVariable.Type = typeOf t; 
-                Name = i;
-            }
-            let i = mutableIndex
-            variableMappings.Add(d, f i)
-            mutableIndex <- mutableIndex + 1s
-            v
-        | _ -> failwith "Not implemented"
+    let processVariableDeclaration (mutableIndex : byref<_>) f d =
+        let v = createILVariable d
+        variableMappings.Add(d, f mutableIndex)
+        mutableIndex <- mutableIndex + 1s
+        v
 
     let processLocalDeclaration declaration =
         processVariableDeclaration &localIndex (fun i -> LocalScope i) declaration
     let processParameter declaration =
         processVariableDeclaration &argumentIndex (fun i -> ArgumentScope i) declaration
 
-    let rec collectLocalDeclarations =
-        function
-        | Ast.CompoundStatement(localDeclarations, statements) ->
-             List.concat [ localDeclarations |> List.map processLocalDeclaration;
-                           statements |> List.collect collectLocalDeclarations ]
-        | _ -> []
+    let rec collectLocalDeclarations statement =
+        let rec fromStatement =
+            function
+            | Ast.ExpressionStatement(es) ->
+                match es with
+                | Ast.Expression(e) -> fromExpression e
+                | Ast.Nop -> []
+            | Ast.CompoundStatement(localDeclarations, statements) ->
+                 List.concat [ localDeclarations |> List.map processLocalDeclaration;
+                               statements |> List.collect collectLocalDeclarations ]
+            | Ast.IfStatement(e, s1, Some(s2)) ->
+                List.concat [ fromExpression e
+                              collectLocalDeclarations s1
+                              collectLocalDeclarations s2 ]
+            | Ast.IfStatement(e, s1, None) ->
+                List.concat [ fromExpression e
+                              collectLocalDeclarations s1 ]
+            | Ast.WhileStatement(e, s) ->
+                List.concat [ fromExpression e
+                              collectLocalDeclarations s ]
+            | Ast.ReturnStatement(Some(e)) ->
+                List.concat [ fromExpression e ]
+            | _ -> []
+
+        and fromExpression =
+            function
+            | Ast.AssignmentExpression(ae) ->
+                match ae with
+                | Ast.ScalarAssignmentExpression(i, e) -> fromExpression e
+                | Ast.ArrayAssignmentExpression(i, e1, e2) as ae ->
+                    let v = {
+                        ILVariable.Type = typeOf (semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec i); 
+                        Name = "ArrayAssignmentTemp" + string localIndex;
+                    }
+                    arrayAssignmentLocals.Add(ae, localIndex);
+                    localIndex <- localIndex + 1s
+                    List.concat [ [ v ]; fromExpression e2 ]
+            | Ast.BinaryExpression(l, op, r)      -> List.concat [ fromExpression l; fromExpression r; ]
+            | Ast.UnaryExpression(op, e)          -> fromExpression e
+            | Ast.ArrayIdentifierExpression(i, e) -> fromExpression e
+            | Ast.FunctionCallExpression(i, a)    -> a |> List.collect fromExpression
+            | Ast.ArrayAllocationExpression(t, e) -> fromExpression e
+            | _ -> []
+
+        fromStatement statement
 
     member x.BuildMethod(returnType, name, parameters, (localDeclarations, statements)) =
         {
@@ -211,16 +295,10 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
 type ILBuilder(semanticAnalysisResult) =
     let variableMappings = new VariableMappingDictionary(HashIdentity.Reference)
 
-    let processVariableDeclaration =
-        function
-        | Ast.ScalarVariableDeclaration(t, i) as d -> 
-            let v = {
-                ILVariable.Type = typeOf t; 
-                Name = i;
-            }
-            variableMappings.Add(d, FieldScope(v))
-            v
-        | Ast.ArrayVariableDeclaration(t, i) -> failwith "Not implemented"
+    let processStaticVariableDeclaration d =
+        let v = createILVariable d
+        variableMappings.Add(d, FieldScope(v))
+        v
 
     member x.BuildClass (program : Ast.Program) =
         let variableDeclarations =
@@ -242,6 +320,6 @@ type ILBuilder(semanticAnalysisResult) =
             ilMethodBuilder.BuildMethod functionDeclaration
 
         {
-            Fields  = variableDeclarations |> List.map processVariableDeclaration;
+            Fields  = variableDeclarations |> List.map processStaticVariableDeclaration;
             Methods = functionDeclarations |> List.map processFunctionDeclaration;
         }

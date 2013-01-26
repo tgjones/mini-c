@@ -7,6 +7,7 @@ int func(int array[ ]) {
 int main(void) {
 	float i[];
 	int j[];
+	int k;
 
 	field = new int[2];
 	field[0] = 1;
@@ -16,8 +17,8 @@ int main(void) {
 
 	j = new int[3];
 	j[0 + 0] = -1;
-	j[1] = j[0] - 1;
+	k = j[1] = j[0] - 1;
 	j[2] = 16;
 
-	return func(j) + field.size;
+	return func(j) + field.size + k;
 }

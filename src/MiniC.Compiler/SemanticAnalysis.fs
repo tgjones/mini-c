@@ -2,7 +2,6 @@
 
 open System.Collections.Generic
 open Ast
-open AstUtilities
 
 type private SymbolScope(parent : SymbolScope option) =
     let mutable list = List.empty<VariableDeclaration>
@@ -121,14 +120,14 @@ type SymbolTable(program) as self =
 
     do program |> List.iter scanDeclaration
 
-type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTable : SymbolTable) as self =
-    inherit Dictionary<Expression, TypeSpec>(HashIdentity.Reference)
-
-    let typeOfIdentifier identifierRef =
-        let declaration = symbolTable.[identifierRef]
+    member x.GetIdentifierTypeSpec identifierRef =
+        let declaration = self.[identifierRef]
         match declaration with
         | ScalarVariableDeclaration(t, _)
         | ArrayVariableDeclaration(t, _)  -> t
+
+type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTable : SymbolTable) as self =
+    inherit Dictionary<Expression, TypeSpec>(HashIdentity.Reference)
 
     let rec scanDeclaration =
         function
@@ -168,18 +167,18 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
             | AssignmentExpression(ae) as x ->
                 match ae with
                 | ScalarAssignmentExpression(i, _) ->
-                    typeOfIdentifier i
+                    symbolTable.GetIdentifierTypeSpec i
                 | ArrayAssignmentExpression(i, _, _) ->
-                    typeOfIdentifier i
+                    symbolTable.GetIdentifierTypeSpec i
             | BinaryExpression(e1, _, e2) ->
                 scanExpression e1
                 // scanExpression e2 // TODO: Check that e1 and e2 have the same type.
             | UnaryExpression(_, e) ->
                 scanExpression e
             | IdentifierExpression(i) ->
-                typeOfIdentifier i
+                symbolTable.GetIdentifierTypeSpec i
             | ArrayIdentifierExpression(i, _) ->
-                typeOfIdentifier i
+                symbolTable.GetIdentifierTypeSpec i
             | FunctionCallExpression(i, _) ->
                 functionTable.[i]
             | ArraySizeExpression(i) ->

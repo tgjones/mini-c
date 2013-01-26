@@ -42,14 +42,18 @@ and ILOpCode =
     | Ldarg of int16
     | Ldc_I4 of int
     | Ldc_R8 of float
-    | Ldsfld of ILVariable
+    | Ldelem of Type
+    | Ldlen
     | Ldloc of int16
+    | Ldsfld of ILVariable
     | Mul
     | Neg
+    | Newarr of Type
     | Pop
     | Rem
     | Ret
     | Starg of int16
-    | Stsfld of ILVariable
+    | Stelem of Type
     | Stloc of int16
+    | Stsfld of ILVariable
     | Sub
