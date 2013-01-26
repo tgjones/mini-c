@@ -17,7 +17,7 @@ int main(void) {
 
 	j = new int[3];
 	j[0 + 0] = -1;
-	k = j[1] = j[0] - 1;
+	k = j[1] = j[0] - 2;
 	j[2] = 16;
 
 	return func(j) + field.size + k;

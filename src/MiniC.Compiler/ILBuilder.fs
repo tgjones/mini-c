@@ -135,7 +135,8 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
                           processExpression e2
                           [ Dup ]
                           [ Stloc arrayAssignmentLocals.[ae] ]
-                          [ Stelem (typeOf (semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec i)) ] ]
+                          [ Stelem (typeOf (semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec i)) ]
+                          [ Ldloc arrayAssignmentLocals.[ae] ] ]
 
     and processUnaryExpression (operator, expression) =
         List.concat [ processExpression expression
@@ -209,19 +210,9 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
     and processExpressionStatement =
         function
         | Ast.Expression(x) ->
-            let expressionOpCodes = processExpression x
-            let arrayAssignmentPopOpCode =
-                match x with
-                | Ast.AssignmentExpression(ae) ->
-                    match ae with
-                    | Ast.ArrayAssignmentExpression(i, e1, e2) -> [ Ldloc arrayAssignmentLocals.[ae] ]
-                    | _ -> []
-                | _ -> []
-            let isNotVoid = semanticAnalysisResult.ExpressionTypes.[x] <> Ast.Void
-            let popOpCode = if List.isEmpty arrayAssignmentPopOpCode && isNotVoid then [ Pop ] else []
+            let isNotVoid = semanticAnalysisResult.ExpressionTypes.[x] <> Ast.Void 
             List.concat [ processExpression x
-                          arrayAssignmentPopOpCode
-                          popOpCode ]
+                          (if isNotVoid then [ Pop ] else []) ]
                 
         | Ast.Nop -> []
 
