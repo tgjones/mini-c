@@ -1,0 +1,23 @@
+﻿int field[];
+
+int func(int array[ ]) {
+	return array[3 - field[0]];
+}
+
+int main(void) {
+	float i[];
+	int j[];
+
+	field = new int[2];
+	field[0] = 1;
+	field[1] = 2;
+
+	i = new float[0];
+
+	j = new int[3];
+	j[0 + 0] = -1;
+	j[1] = j[0] - 1;
+	j[2] = 16;
+
+	return func(j) + field.size;
+}
