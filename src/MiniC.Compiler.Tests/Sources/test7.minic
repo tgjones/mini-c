@@ -1,0 +1,20 @@
+﻿// This example is from "Mini-C to JVM"
+// http://jamesvanboxtel.com/projects/minic-compiler/minic.pdf
+
+int isqrt(int a, int guess) { // tail recursive integer square root
+	int x;
+	if (guess == (x = (guess + a/guess)/2)) // guess via Newton’s method
+		return guess;
+	return isqrt(a, x); // tail recurse
+}
+
+int num;
+float f;
+
+void main(void) {
+	num = iread();
+	iprint(isqrt(num, num/2));
+
+	f = fread();
+	fprint(f * 2);
+}
