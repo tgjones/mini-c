@@ -16,8 +16,8 @@ let ``can build int return value``() =
                 ])
             )
         ]
-    let symbolTable = new SymbolTable(program)
-    let ilBuilder = new ILBuilder(symbolTable)
+    let semanticAnalysisResult = SemanticAnalysis.analyze program
+    let ilBuilder = new ILBuilder(semanticAnalysisResult)
     let result = ilBuilder.BuildClass program
     let expected =
         {
@@ -57,8 +57,8 @@ let ``can build binary expression``() =
                 )
             )
         ]
-    let symbolTable = new SymbolTable(program)
-    let ilBuilder = new ILBuilder(symbolTable)
+    let semanticAnalysisResult = SemanticAnalysis.analyze program
+    let ilBuilder = new ILBuilder(semanticAnalysisResult)
     let result = ilBuilder.BuildClass program
     let expected =
         {

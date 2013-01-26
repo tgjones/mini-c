@@ -2,23 +2,25 @@
 
 open System.Collections.Generic
 open AstUtilities
+open SemanticAnalysis
 open IL
 
-type ILVariableScope =
+type private ILVariableScope =
     | FieldScope of ILVariable
     | ArgumentScope of int16
     | LocalScope of int16
 
-type VariableMappingDictionary = Dictionary<Ast.VariableDeclaration, ILVariableScope>
+type private VariableMappingDictionary = Dictionary<Ast.VariableDeclaration, ILVariableScope>
 
-type ILMethodBuilder(symbolTable : SymbolTable, variableMappings : VariableMappingDictionary) =
+type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
+                     variableMappings : VariableMappingDictionary) =
     let mutable argumentIndex = 0s
     let mutable localIndex = 0s
     let mutable labelIndex = 0
     let mutable currentWhileStatementEndLabel = ILLabel()
 
     let lookupILVariableScope identifierRef =
-        let declaration = symbolTable.[identifierRef]
+        let declaration = semanticAnalysisResult.SymbolTable.[identifierRef]
         variableMappings.[declaration]
 
     let makeLabel() =
@@ -164,7 +166,8 @@ type ILMethodBuilder(symbolTable : SymbolTable, variableMappings : VariableMappi
 
     and processExpressionStatement =
         function
-        | Ast.Expression(x) -> processExpression x
+        | Ast.Expression(x) ->
+            processExpression x
         | Ast.Nop -> []
 
     let processVariableDeclaration (mutableIndex : byref<_>) f =
@@ -202,7 +205,7 @@ type ILMethodBuilder(symbolTable : SymbolTable, variableMappings : VariableMappi
             Body       = statements |> List.collect processStatement;
         }
 
-type ILBuilder(symbolTable) =
+type ILBuilder(semanticAnalysisResult) =
     let variableMappings = new VariableMappingDictionary(HashIdentity.Reference)
 
     let processVariableDeclaration =
@@ -232,7 +235,7 @@ type ILBuilder(symbolTable) =
                 | _ -> None)
 
         let processFunctionDeclaration functionDeclaration =
-            let ilMethodBuilder = new ILMethodBuilder(symbolTable, variableMappings)
+            let ilMethodBuilder = new ILMethodBuilder(semanticAnalysisResult, variableMappings)
             ilMethodBuilder.BuildMethod functionDeclaration
 
         {

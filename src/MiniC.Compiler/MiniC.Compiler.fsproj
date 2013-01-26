@@ -41,7 +41,6 @@
     <Compile Include="ParsingUtilities.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="AstUtilities.fs" />
-    <Compile Include="SymbolTable.fs" />
     <Compile Include="SemanticAnalysis.fs" />
     <Compile Include="IL.fs" />
     <Compile Include="ILBuilder.fs" />

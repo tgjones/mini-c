@@ -2,6 +2,7 @@
 
 open NUnit.Framework
 open MiniC.Compiler
+open MiniC.Compiler.SemanticAnalysis
 
 [<Test>]
 let ``can find declaration in symbol table``() =
