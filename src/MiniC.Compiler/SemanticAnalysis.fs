@@ -34,7 +34,7 @@ type private SymbolScopeStack() =
     member x.AddDeclaration declaration = stack.Peek().AddDeclaration declaration
 
 type FunctionTable(program) as self =
-    inherit Dictionary<Identifier, TypeSpec>(HashIdentity.Reference)
+    inherit Dictionary<Identifier, TypeSpec>()
 
     let rec scanDeclaration =
         function
