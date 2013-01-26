@@ -28,11 +28,15 @@ and ILLabel = int
 and ILOpCode =
     | Add
     | Br of ILLabel
+    | Brfalse of ILLabel
     | Brtrue of ILLabel
     | Call of string
     | Ceq
+    | Cge
     | Cgt
+    | Cle
     | Clt
+    | Div
     | Label of ILLabel
     | Ldarg of int16
     | Ldc_I4 of int
@@ -40,6 +44,8 @@ and ILOpCode =
     | Ldsfld of ILVariable
     | Ldloc of int16
     | Mul
+    | Neg
+    | Rem
     | Ret
     | Starg of int16
     | Stsfld of ILVariable

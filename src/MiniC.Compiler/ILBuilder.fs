@@ -36,18 +36,45 @@ type ILBuilder(symbolEnvironment) =
         labelIndex <- labelIndex + 1
         result
 
-    let rec processBinaryExpression (l, op, r) =
-        List.concat [ (processExpression l); (processExpression r); [ processBinaryOperator op ] ]
+    let rec processBinaryExpression =
+        function
+        | (l, Ast.ConditionalOr, r) ->
+            let leftIsFalseLabel = makeLabel()
+            let endLabel = makeLabel()
+            List.concat [ processExpression l
+                          [ Brfalse leftIsFalseLabel ]
+                          [ Ldc_I4 1 ]
+                          [ Br endLabel ]
+                          [ Label leftIsFalseLabel ]
+                          processExpression r
+                          [ Label endLabel ] ]
+        | (l, Ast.ConditionalAnd, r) ->
+            let leftIsTrueLabel = makeLabel()
+            let endLabel = makeLabel()
+            List.concat [ processExpression l
+                          [ Brtrue leftIsTrueLabel ]
+                          [ Ldc_I4 0 ]
+                          [ Br endLabel ]
+                          [ Label leftIsTrueLabel ]
+                          processExpression r
+                          [ Label endLabel ] ]
+        | (l, op, r) -> List.concat [ (processExpression l);
+                                      (processExpression r);
+                                      [ processBinaryOperator op ] ]
 
     and processBinaryOperator =
         function
         | Ast.Add -> Add
+        | Ast.Divide -> Div
         | Ast.Multiply -> Mul
+        | Ast.Modulus -> Rem
         | Ast.Subtract -> Sub
         | Ast.Equal -> Ceq
         | Ast.Greater -> Cgt
+        | Ast.GreaterEqual -> Cge
         | Ast.Less -> Clt
-        | _ -> failwith "Not implemented"
+        | Ast.LessEqual -> Cle
+        | _ -> failwith "Shouldn't be here"
 
     and processLiteralExpression =
         function
@@ -75,6 +102,7 @@ type ILBuilder(symbolEnvironment) =
         match expression with
         | Ast.AssignmentExpression(x) -> processAssignmentExpression expression x
         | Ast.BinaryExpression(a, b, c) -> processBinaryExpression (a, b, c)
+        | Ast.UnaryExpression(a, b) -> processUnaryExpression (a, b)
         | Ast.LiteralExpression(x) -> processLiteralExpression x
         | Ast.IdentifierExpression(i) -> processIdentifierExpression expression i
         | Ast.FunctionCallExpression(i, a) -> processFunctionCallExpression (i, a)
@@ -85,6 +113,16 @@ type ILBuilder(symbolEnvironment) =
         | Ast.ScalarAssignmentExpression(i, e) as ae ->
             List.concat [ (processExpression e); processIdentifierStore expression ]
         | _ -> failwith "Not implemented"
+
+    and processUnaryExpression (operator, expression) =
+        List.concat [ processExpression expression
+                      processUnaryOperator operator ]
+
+    and processUnaryOperator =
+        function
+        | Ast.LogicalNegate -> [ Ldc_I4(0); Ceq ]
+        | Ast.Negate        -> [ Neg ]
+        | Ast.Identity      -> [ ]
 
     and processFunctionCallExpression (identifier, arguments) =
         List.concat [ arguments |> List.collect processExpression
