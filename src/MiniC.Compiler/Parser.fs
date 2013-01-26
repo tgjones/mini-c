@@ -217,7 +217,7 @@ expression.AddProduction(identifier).SetReduceFunction (fun a -> Ast.IdentifierE
 expression.AddProduction(identifier, openSquare, expression, closeSquare)
     .SetReduceFunction (fun a _ c _ -> Ast.ArrayIdentifierExpression(IdentifierRef a, c))
 expression.AddProduction(identifier, openParen, optionalArguments, closeParen)
-    .SetReduceFunction (fun a _ c _ -> Ast.FunctionCallExpression(IdentifierRef a, c))
+    .SetReduceFunction (fun a _ c _ -> Ast.FunctionCallExpression(a, c))
 expression.AddProduction(identifier, period, sizeKeyword)
     .SetReduceFunction (fun a _ _ -> Ast.ArraySizeExpression (IdentifierRef a))
 

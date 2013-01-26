@@ -55,7 +55,7 @@ and Expression =
     | UnaryExpression of UnaryOperator * Expression
     | IdentifierExpression of IdentifierRef
     | ArrayIdentifierExpression of IdentifierRef * Expression
-    | FunctionCallExpression of IdentifierRef * Arguments
+    | FunctionCallExpression of Identifier * Arguments
     | ArraySizeExpression of IdentifierRef
     | LiteralExpression of Literal
     | ArrayAllocationExpression of TypeSpec * Expression

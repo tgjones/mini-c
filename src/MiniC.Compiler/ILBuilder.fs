@@ -115,9 +115,9 @@ type ILMethodBuilder(symbolTable : SymbolTable, variableMappings : VariableMappi
         | Ast.Negate        -> [ Neg ]
         | Ast.Identity      -> [ ]
 
-    and processFunctionCallExpression (identifierRef, arguments) =
+    and processFunctionCallExpression (identifier, arguments) =
         List.concat [ arguments |> List.collect processExpression
-                      [ Call(identifierRef.Identifier) ] ]
+                      [ Call(identifier) ] ]
 
     and processReturnStatement =
         function

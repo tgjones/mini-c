@@ -100,8 +100,7 @@ type SymbolTable(program) as self =
         | ArrayIdentifierExpression(i, e) ->
             addIdentifierMapping i
             scanExpression e
-        | FunctionCallExpression(i, args) ->
-            addIdentifierMapping i
+        | FunctionCallExpression(_, args) ->
             args |> List.iter scanExpression
         | ArraySizeExpression(i) ->
             addIdentifierMapping i

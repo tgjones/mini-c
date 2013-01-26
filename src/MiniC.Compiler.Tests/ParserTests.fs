@@ -408,7 +408,7 @@ let ``can parse function call``() =
                         Ast.ReturnStatement(
                             Some(
                                 Ast.FunctionCallExpression(
-                                    Ast.IdentifierRef "func",
+                                    "func",
                                     [
                                         Ast.BinaryExpression(
                                             Ast.IdentifierExpression(Ast.IdentifierRef "i"),
