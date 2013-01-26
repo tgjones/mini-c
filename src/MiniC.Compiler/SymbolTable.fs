@@ -4,22 +4,11 @@ open System.Collections.Generic
 open Ast
 
 type SymbolScope(parent : SymbolScope option) =
-    let mutable list = List.empty<IVariableDeclaration>
-    let declaresIdentifier identifier (declaration : IVariableDeclaration) =
-        match declaration with
-        | :? VariableDeclaration as d ->
-            match d with
-            | ScalarVariableDeclaration(t, i) -> i = identifier
-            | ArrayVariableDeclaration(t, i) -> i = identifier
-        | :? Parameter as d ->
-            match d with
-            | ScalarParameter(t, i) -> i = identifier
-            | ArrayParameter(t, i) -> i = identifier
-        | :? LocalDeclaration as d ->
-            match d with
-            | ScalarLocalDeclaration(t, i) -> i = identifier
-            | ArrayLocalDeclaration(t, i) -> i = identifier
-        | _ -> failwith "Oops"
+    let mutable list = List.empty<VariableDeclaration>
+    let declaresIdentifier identifier =
+        function
+        | ScalarVariableDeclaration(t, i) -> i = identifier
+        | ArrayVariableDeclaration(t, i) -> i = identifier
 
     member x.AddDeclaration declaration =
         list <- declaration :: list
@@ -53,8 +42,8 @@ module SymbolEnvironment =
 
         let rec scanDeclaration =
             function
-            | VariableDeclaration(x) -> symbolTable.AddDeclaration x
-            | FunctionDeclaration(x) -> scanFunctionDeclaration x
+            | StaticVariableDeclaration(x) -> symbolTable.AddDeclaration x
+            | FunctionDeclaration(x)       -> scanFunctionDeclaration x
 
         and scanFunctionDeclaration (_, _, parameters, compoundStatement) =
             symbolTable.Push()

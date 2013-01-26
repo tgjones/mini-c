@@ -32,5 +32,11 @@ int func4(void) {
 }
 
 int main(void) {
-	return func1() + func2() + func3() + func4();
+	int a;
+	int b;
+	int c;
+	a = b = c = 32;
+
+	return func1() + func2() + func3() + func4()
+		+ a + b + c;
 }

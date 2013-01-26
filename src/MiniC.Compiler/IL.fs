@@ -36,6 +36,7 @@ and ILOpCode =
     | Cgt
     | Cle
     | Clt
+    | Dup
     | Div
     | Label of ILLabel
     | Ldarg of int16
@@ -45,6 +46,7 @@ and ILOpCode =
     | Ldloc of int16
     | Mul
     | Neg
+    | Pop
     | Rem
     | Ret
     | Starg of int16

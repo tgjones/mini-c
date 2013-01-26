@@ -132,8 +132,8 @@ let ``can parse parameters and expression``() =
         [Ast.FunctionDeclaration(
             Ast.Int, "foo",
             [
-                Ast.ScalarParameter (Ast.Int, "a")
-                Ast.ArrayParameter (Ast.Float, "b")
+                Ast.ScalarVariableDeclaration (Ast.Int, "a")
+                Ast.ArrayVariableDeclaration (Ast.Float, "b")
             ],
             (
                 [],
@@ -169,8 +169,8 @@ let ``can parse if statement``() =
             Ast.Int,
             "bar",
             [
-                Ast.ScalarParameter (Ast.Int, "a")
-                Ast.ScalarParameter (Ast.Bool, "b")
+                Ast.ScalarVariableDeclaration (Ast.Int, "a")
+                Ast.ScalarVariableDeclaration (Ast.Bool, "b")
             ],
             (
                 [],
@@ -205,13 +205,13 @@ let ``can parse complex arithmetic expression``() =
         }"
     let expected =
         [
-            Ast.VariableDeclaration(Ast.ScalarVariableDeclaration(Ast.Int, "z"))
-            Ast.VariableDeclaration(Ast.ArrayVariableDeclaration(Ast.Float, "y"))
+            Ast.StaticVariableDeclaration(Ast.ScalarVariableDeclaration(Ast.Int, "z"))
+            Ast.StaticVariableDeclaration(Ast.ArrayVariableDeclaration(Ast.Float, "y"))
             Ast.FunctionDeclaration(
                 Ast.Int, "baz",
                 [
-                    Ast.ScalarParameter (Ast.Int, "a")
-                    Ast.ScalarParameter (Ast.Int, "b")
+                    Ast.ScalarVariableDeclaration (Ast.Int, "a")
+                    Ast.ScalarVariableDeclaration (Ast.Int, "b")
                 ],
                 (
                     [],
@@ -254,7 +254,7 @@ let ``can parse logical negation and unary subtraction expression``() =
         [Ast.FunctionDeclaration(
             Ast.Int,
             "foo",
-            [ Ast.ScalarParameter (Ast.Bool, "b") ],
+            [ Ast.ScalarVariableDeclaration (Ast.Bool, "b") ],
             (
                 [],
                 [
@@ -293,8 +293,8 @@ let ``can parse if / else statement``() =
             Ast.Int,
             "main",
             [
-                Ast.ScalarParameter (Ast.Int, "a")
-                Ast.ScalarParameter (Ast.Bool, "b")
+                Ast.ScalarVariableDeclaration (Ast.Int, "a")
+                Ast.ScalarVariableDeclaration (Ast.Bool, "b")
             ],
             (
                 [],
@@ -320,7 +320,7 @@ let ``can parse while and break statements``() =
     let expected =
         [Ast.FunctionDeclaration(
             Ast.Int, "main",
-            [ Ast.ScalarParameter (Ast.Bool, "b") ],
+            [ Ast.ScalarVariableDeclaration (Ast.Bool, "b") ],
             (
                 [],
                 [
@@ -351,14 +351,14 @@ let ``can parse local declarations in compound statements``() =
             Ast.Int, "main", [],
             (
                 [
-                    Ast.ScalarLocalDeclaration(Ast.Int, "a")
-                    Ast.ScalarLocalDeclaration(Ast.Bool, "b")
-                    Ast.ScalarLocalDeclaration(Ast.Float, "c")
-                    Ast.ArrayLocalDeclaration(Ast.Int, "d")
+                    Ast.ScalarVariableDeclaration(Ast.Int, "a")
+                    Ast.ScalarVariableDeclaration(Ast.Bool, "b")
+                    Ast.ScalarVariableDeclaration(Ast.Float, "c")
+                    Ast.ArrayVariableDeclaration(Ast.Int, "d")
                 ],
                 [
                     Ast.CompoundStatement(
-                        [ Ast.ScalarLocalDeclaration(Ast.Int, "e") ],
+                        [ Ast.ScalarVariableDeclaration(Ast.Int, "e") ],
                         []
                     )
                 ]
@@ -381,8 +381,8 @@ let ``can parse function call``() =
             Ast.FunctionDeclaration(
                 Ast.Int, "func",
                 [
-                    Ast.ScalarParameter(Ast.Int, "i")
-                    Ast.ScalarParameter(Ast.Int, "j")
+                    Ast.ScalarVariableDeclaration(Ast.Int, "i")
+                    Ast.ScalarVariableDeclaration(Ast.Int, "j")
                 ],
                 (
                     [],
@@ -401,7 +401,7 @@ let ``can parse function call``() =
             )
             Ast.FunctionDeclaration(
                 Ast.Int, "main",
-                [ Ast.ScalarParameter (Ast.Int, "i") ],
+                [ Ast.ScalarVariableDeclaration (Ast.Int, "i") ],
                 (
                     [],
                     [
@@ -443,9 +443,9 @@ let ``can parse assignment expressions``() =
         [Ast.FunctionDeclaration(
             Ast.Int, "main",
             [
-                Ast.ScalarParameter (Ast.Int, "i")
-                Ast.ArrayParameter (Ast.Int, "j")
-                Ast.ScalarParameter (Ast.Float, "k")
+                Ast.ScalarVariableDeclaration (Ast.Int, "i")
+                Ast.ArrayVariableDeclaration (Ast.Int, "j")
+                Ast.ScalarVariableDeclaration (Ast.Float, "k")
             ],
             (
                 [],
@@ -507,8 +507,8 @@ let ``can parse array expressions``() =
         [Ast.FunctionDeclaration(
             Ast.Void, "main",
             [
-                Ast.ScalarParameter (Ast.Int, "i")
-                Ast.ArrayParameter (Ast.Int, "j")
+                Ast.ScalarVariableDeclaration (Ast.Int, "i")
+                Ast.ArrayVariableDeclaration (Ast.Int, "j")
             ],
             (
                 [],

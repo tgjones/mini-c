@@ -1,6 +1,7 @@
 ﻿namespace MiniC.Compiler
 
 open System.Collections.Generic
+open AstUtilities
 open IL
 
 type ILVariableScope =
@@ -8,22 +9,7 @@ type ILVariableScope =
     | ArgumentScope of int16
     | LocalScope of int16
 
-type VariableMappingDictionary = Dictionary<Ast.IVariableDeclaration, ILVariableScope>
-
-module ILUtilities =
-    let getType =
-        function
-        | Ast.Void  -> typeof<System.Void>
-        | Ast.Bool  -> typeof<bool>
-        | Ast.Int   -> typeof<int>
-        | Ast.Float -> typeof<float>
-
-    let getParameterType =
-        function
-        | Ast.ScalarParameter(typeSpec, _) -> getType typeSpec
-        | Ast.ArrayParameter(typeSpec, _)  -> failwith "Not implemented"
-
-open ILUtilities
+type VariableMappingDictionary = Dictionary<Ast.VariableDeclaration, ILVariableScope>
 
 type ILMethodBuilder(symbolEnvironment, variableMappings : VariableMappingDictionary) =
     let mutable argumentIndex = 0s
@@ -85,7 +71,6 @@ type ILMethodBuilder(symbolEnvironment, variableMappings : VariableMappingDictio
         | Ast.IntLiteral(x)   -> [ Ldc_I4(x) ]
         | Ast.FloatLiteral(x) -> [ Ldc_R8(x) ]
         | Ast.BoolLiteral(x)  -> [ (if x then Ldc_I4(1) else Ldc_I4(0)) ]
-        | _ -> failwith "Not implemented"
 
     and processIdentifierLoad expression =
         match lookupILVariableScope expression with
@@ -115,7 +100,9 @@ type ILMethodBuilder(symbolEnvironment, variableMappings : VariableMappingDictio
     and processAssignmentExpression expression =
         function
         | Ast.ScalarAssignmentExpression(i, e) as ae ->
-            List.concat [ (processExpression e); processIdentifierStore expression ]
+            List.concat [ processExpression e
+                          [ Dup ]
+                          processIdentifierStore expression ]
         | _ -> failwith "Not implemented"
 
     and processUnaryExpression (operator, expression) =
@@ -180,29 +167,23 @@ type ILMethodBuilder(symbolEnvironment, variableMappings : VariableMappingDictio
         | Ast.Expression(x) -> processExpression x
         | Ast.Nop -> []
 
-    let processLocalDeclaration =
+    let processVariableDeclaration (mutableIndex : byref<_>) f =
         function
-        | Ast.ScalarLocalDeclaration(t, i) as d ->
+        | Ast.ScalarVariableDeclaration(t, i) as d ->
             let v = {
-                ILVariable.Type = getType t; 
+                ILVariable.Type = typeOf t; 
                 Name = i;
             }
-            variableMappings.Add(d, LocalScope localIndex)
-            localIndex <- localIndex + 1s
+            let i = mutableIndex
+            variableMappings.Add(d, f i)
+            mutableIndex <- mutableIndex + 1s
             v
         | _ -> failwith "Not implemented"
 
-    let processParameter =
-        function
-        | Ast.ScalarParameter(t, i) as d ->
-            let v = {
-                ILVariable.Type = getType t; 
-                Name = i;
-            }
-            variableMappings.Add(d, ArgumentScope argumentIndex)
-            argumentIndex <- argumentIndex + 1s
-            v
-        | _ -> failwith "Not implemented"
+    let processLocalDeclaration declaration =
+        processVariableDeclaration &localIndex (fun i -> LocalScope i) declaration
+    let processParameter declaration =
+        processVariableDeclaration &argumentIndex (fun i -> ArgumentScope i) declaration
 
     let rec collectLocalDeclarations =
         function
@@ -214,7 +195,7 @@ type ILMethodBuilder(symbolEnvironment, variableMappings : VariableMappingDictio
     member x.BuildMethod(returnType, name, parameters, (localDeclarations, statements)) =
         {
             Name       = name;
-            ReturnType = getType returnType;
+            ReturnType = typeOf returnType;
             Parameters = parameters |> List.map processParameter;
             Locals     = List.concat [ localDeclarations |> List.map processLocalDeclaration;
                                        statements |> List.collect collectLocalDeclarations ]
@@ -228,7 +209,7 @@ type ILBuilder(symbolEnvironment) =
         function
         | Ast.ScalarVariableDeclaration(t, i) as d -> 
             let v = {
-                ILVariable.Type = getType t; 
+                ILVariable.Type = typeOf t; 
                 Name = i;
             }
             variableMappings.Add(d, FieldScope(v))
@@ -240,7 +221,7 @@ type ILBuilder(symbolEnvironment) =
             program
             |> List.choose (fun x ->
                 match x with
-                | Ast.VariableDeclaration(x) -> Some(x)
+                | Ast.StaticVariableDeclaration(x) -> Some(x)
                 | _ -> None)
     
         let functionDeclarations =

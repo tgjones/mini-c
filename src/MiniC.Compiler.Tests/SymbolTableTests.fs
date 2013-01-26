@@ -6,11 +6,11 @@ open MiniC.Compiler
 [<Test>]
 let ``can find declaration in symbol table``() =
     // Arrange.
-    let variableDeclarationA = Ast.VariableDeclaration (Ast.ScalarVariableDeclaration(Ast.Float, "a"))
-    let localDeclarationA1 = Ast.ScalarLocalDeclaration(Ast.Int, "a")
-    let localDeclarationB1 = Ast.ScalarLocalDeclaration(Ast.Bool, "b")
-    let localDeclarationA2 = Ast.ScalarLocalDeclaration(Ast.Int, "a")
-    let localDeclarationC1 = Ast.ArrayLocalDeclaration(Ast.Int, "c")
+    let variableDeclarationA = Ast.StaticVariableDeclaration (Ast.ScalarVariableDeclaration(Ast.Float, "a"))
+    let localDeclarationA1 = Ast.ScalarVariableDeclaration(Ast.Int, "a")
+    let localDeclarationB1 = Ast.ScalarVariableDeclaration(Ast.Bool, "b")
+    let localDeclarationA2 = Ast.ScalarVariableDeclaration(Ast.Int, "a")
+    let localDeclarationC1 = Ast.ArrayVariableDeclaration(Ast.Int, "c")
     let identifierExpression1 = Ast.IdentifierExpression "a"
     let identifierExpression2 = Ast.IdentifierExpression "a"
     let program =
@@ -18,7 +18,7 @@ let ``can find declaration in symbol table``() =
             variableDeclarationA;
             Ast.FunctionDeclaration(
                 Ast.Int, "main",
-                [ Ast.ScalarParameter(Ast.Int, "a")], // Shadows previous variable
+                [ Ast.ScalarVariableDeclaration(Ast.Int, "a")], // Shadows previous variable
                 (
                     [
                         localDeclarationA1; // Shadows previous parameter
