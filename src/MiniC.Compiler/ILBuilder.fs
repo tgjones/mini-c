@@ -8,17 +8,9 @@ type ILVariableScope =
     | ArgumentScope of int16
     | LocalScope of int16
 
-type ILBuilder(symbolEnvironment) =
-    let variableMappings = new Dictionary<Ast.IVariableDeclaration, ILVariableScope>(HashIdentity.Reference)
-    let mutable argumentIndex = 0s // TODO: Won't work for multiple function declarations
-    let mutable localIndex = 0s // TODO: Won't work for multiple compound statements
-    let mutable labelIndex = 0 // TODO: Won't work for multiple function declarations
-    let mutable currentWhileStatementEndLabel = ILLabel()
+type VariableMappingDictionary = Dictionary<Ast.IVariableDeclaration, ILVariableScope>
 
-    let lookupILVariableScope expression =
-        let declaration = SymbolEnvironment.findDeclaration expression symbolEnvironment
-        variableMappings.[declaration]
-
+module ILUtilities =
     let getType =
         function
         | Ast.Void  -> typeof<System.Void>
@@ -30,6 +22,18 @@ type ILBuilder(symbolEnvironment) =
         function
         | Ast.ScalarParameter(typeSpec, _) -> getType typeSpec
         | Ast.ArrayParameter(typeSpec, _)  -> failwith "Not implemented"
+
+open ILUtilities
+
+type ILMethodBuilder(symbolEnvironment, variableMappings : VariableMappingDictionary) =
+    let mutable argumentIndex = 0s
+    let mutable localIndex = 0s
+    let mutable labelIndex = 0
+    let mutable currentWhileStatementEndLabel = ILLabel()
+
+    let lookupILVariableScope expression =
+        let declaration = SymbolEnvironment.findDeclaration expression symbolEnvironment
+        variableMappings.[declaration]
 
     let makeLabel() =
         let result = labelIndex
@@ -207,7 +211,7 @@ type ILBuilder(symbolEnvironment) =
                            statements |> List.collect collectLocalDeclarations ]
         | _ -> []
 
-    let processFunctionDeclaration (returnType, name, parameters, (localDeclarations, statements)) =
+    member x.BuildMethod(returnType, name, parameters, (localDeclarations, statements)) =
         {
             Name       = name;
             ReturnType = getType returnType;
@@ -216,6 +220,9 @@ type ILBuilder(symbolEnvironment) =
                                        statements |> List.collect collectLocalDeclarations ]
             Body       = statements |> List.collect processStatement;
         }
+
+type ILBuilder(symbolEnvironment) =
+    let variableMappings = new VariableMappingDictionary(HashIdentity.Reference)
 
     let processVariableDeclaration =
         function
@@ -242,6 +249,10 @@ type ILBuilder(symbolEnvironment) =
                 match x with
                 | Ast.FunctionDeclaration(_, _, _, _ as a) -> Some a
                 | _ -> None)
+
+        let processFunctionDeclaration functionDeclaration =
+            let ilMethodBuilder = new ILMethodBuilder(symbolEnvironment, variableMappings)
+            ilMethodBuilder.BuildMethod functionDeclaration
 
         {
             Fields  = variableDeclarations |> List.map processVariableDeclaration;

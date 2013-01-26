@@ -1,0 +1,36 @@
+﻿int func1(void) {
+	int a;
+	a = 1;
+	return a;
+}
+
+int func2(void) {
+	int a;
+	a = 2;
+	return a;
+}
+
+int func3(void) {
+	int a;
+	a = 4;
+	return a;
+}
+
+int func4(void) {
+	int a;
+	{
+		int b;
+		b = 8;
+		a = b;
+	}
+	{
+		int b;
+		b = 16;
+		a = a + b;
+	}
+	return a;
+}
+
+int main(void) {
+	return func1() + func2() + func3() + func4();
+}
