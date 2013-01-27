@@ -1,6 +1,4 @@
-﻿//[4] : Global variable with this identifier already declared
-
-int x;
+﻿int x;
 bool x;
 
 void main(void) {

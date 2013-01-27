@@ -70,6 +70,7 @@ let ``can compile, save and execute application with I/O``() =
     Assert.That(!output, Is.EqualTo ("3\n400\n\n"))
 
 [<TestCase("error1.minic", "CS001 A variable named 'x' is already defined in this scope")>]
+[<TestCase("error2.minic", "CS001 A variable named 'y' is already defined in this scope")>]
 let ``can detect semantic errors`` sourceFile (compilerError : string) =
     let code = File.ReadAllText(Path.Combine("Sources", sourceFile))
     Assert.That(

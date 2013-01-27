@@ -14,7 +14,7 @@ type private SymbolScope(parent : SymbolScope option) =
         (identifierFromDeclaration declaration) = identifierRef.Identifier
 
     member x.AddDeclaration declaration =
-        if List.exists (fun x -> true) list then
+        if List.exists (fun x -> identifierFromDeclaration x = identifierFromDeclaration declaration) list then
             raise (CompilerException(sprintf "CS001 A variable named '%s' is already defined in this scope" (identifierFromDeclaration declaration)))
         list <- declaration :: list
 
