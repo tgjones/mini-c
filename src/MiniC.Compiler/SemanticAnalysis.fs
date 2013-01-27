@@ -187,7 +187,12 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                 let typeOfE1 = scanExpression e1
                 let typeOfE2 = scanExpression e2
                 match op with
-                | ConditionalOr | Equal | NotEqual | ConditionalAnd ->
+                | ConditionalOr | ConditionalAnd ->
+                    match typeOfE1, typeOfE2 with
+                    | Bool, Bool -> ()
+                    | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
+                    Bool
+                | Equal | NotEqual ->
                     match typeOfE1, typeOfE2 with
                     | Int, Int
                     | Int, Float
@@ -207,7 +212,7 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                     | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
                     Bool
                 | Add | Subtract | Multiply | Divide | Modulus ->
-                    scanExpression e1 // TODO: Widen int to float
+                    typeOfE1 // TODO: Widen int to float
             | UnaryExpression(_, e) ->
                 scanExpression e
             | IdentifierExpression(i) ->
