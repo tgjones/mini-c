@@ -9,7 +9,7 @@ let ``can build int return value``() =
     let program =
         [
             Ast.FunctionDeclaration(
-                Ast.Void, "main", [],
+                Ast.Int, "main", [],
                 ([], [ Ast.ReturnStatement(
                         Some (Ast.LiteralExpression (Ast.IntLiteral 123))
                     )
@@ -22,7 +22,7 @@ let ``can build int return value``() =
     let expected =
         {
             Name       = "main";
-            ReturnType = typeof<System.Void>;
+            ReturnType = typeof<int>;
             Parameters = [];
             Locals     = [];
             Body       = [ IL.Ldc_I4(123); IL.Ret ];
@@ -36,7 +36,7 @@ let ``can build binary expression``() =
     let program =
         [
             Ast.FunctionDeclaration(
-                Ast.Void, "main", [],
+                Ast.Int, "main", [],
                 (
                     [],
                     [
@@ -59,7 +59,7 @@ let ``can build binary expression``() =
     let expected =
         {
             Name       = "main";
-            ReturnType = typeof<System.Void>;
+            ReturnType = typeof<int>;
             Parameters = [];
             Locals     = [];
             Body       = [ IL.Ldc_I4(123); IL.Ldc_I4(456); IL.Add; IL.Ret ];

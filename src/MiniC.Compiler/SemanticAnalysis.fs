@@ -145,98 +145,99 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
         | FunctionDeclaration(x) -> scanFunctionDeclaration x
         | _ -> ()
 
-    and scanFunctionDeclaration (_, _, _, compoundStatement) =
-        scanCompoundStatement compoundStatement
+    and scanFunctionDeclaration (functionReturnType, _, _, compoundStatement) =
+        let rec scanCompoundStatement (_, statements) =
+            statements |> List.iter scanStatement
 
-    and scanCompoundStatement (_, statements) =
-        statements |> List.iter scanStatement
+        and scanStatement =
+            function
+            | ExpressionStatement(es) ->
+                match es with
+                | Expression(e) -> scanExpression e |> ignore
+                | Nop -> ()
+            | CompoundStatement(x) -> scanCompoundStatement x
+            | IfStatement(e, s1, Some(s2)) ->
+                scanExpression e |> ignore
+                scanStatement s1
+                scanStatement s2
+            | IfStatement(e, s1, None) ->
+                scanExpression e |> ignore
+                scanStatement s1
+            | WhileStatement(e, s) ->
+                scanExpression e |> ignore
+                scanStatement s
+            | ReturnStatement(Some(e)) ->
+                let typeOfE = scanExpression e
+                if typeOfE <> functionReturnType then raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (typeOfE.ToString()) (functionReturnType.ToString())))
+            | _ -> ()
 
-    and scanStatement =
-        function
-        | ExpressionStatement(es) ->
-            match es with
-            | Expression(e) -> scanExpression e |> ignore
-            | Nop -> ()
-        | CompoundStatement(x) -> scanCompoundStatement x
-        | IfStatement(e, s1, Some(s2)) ->
-            scanExpression e |> ignore
-            scanStatement s1
-            scanStatement s2
-        | IfStatement(e, s1, None) ->
-            scanExpression e |> ignore
-            scanStatement s1
-        | WhileStatement(e, s) ->
-            scanExpression e |> ignore
-            scanStatement s
-        | ReturnStatement(Some(e)) ->
-            scanExpression e |> ignore
-        | _ -> ()
-
-    and scanExpression expression =
-        let expressionType =
-            match expression with
-            | AssignmentExpression(ae) as x ->
-                match ae with
-                | ScalarAssignmentExpression(i, e) ->
-                    let typeOfE = scanExpression e
-                    let typeOfI = symbolTable.GetIdentifierTypeSpec i
-                    if typeOfE <> typeOfI then raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (typeOfE.ToString()) (typeOfI.ToString())))
-                    typeOfI
-                | ArrayAssignmentExpression(i, _, _) ->
+        and scanExpression expression =
+            let expressionType =
+                match expression with
+                | AssignmentExpression(ae) as x ->
+                    match ae with
+                    | ScalarAssignmentExpression(i, e) ->
+                        let typeOfE = scanExpression e
+                        let typeOfI = symbolTable.GetIdentifierTypeSpec i
+                        if typeOfE <> typeOfI then raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (typeOfE.ToString()) (typeOfI.ToString())))
+                        typeOfI
+                    | ArrayAssignmentExpression(i, _, _) ->
+                        symbolTable.GetIdentifierTypeSpec i
+                | BinaryExpression(e1, op, e2) ->
+                    let typeOfE1 = scanExpression e1
+                    let typeOfE2 = scanExpression e2
+                    match op with
+                    | ConditionalOr | ConditionalAnd ->
+                        match typeOfE1, typeOfE2 with
+                        | Bool, Bool -> ()
+                        | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
+                        Bool
+                    | Equal | NotEqual ->
+                        match typeOfE1, typeOfE2 with
+                        | Int, Int
+                        | Int, Float
+                        | Float, Int
+                        | Float, Float
+                        | Bool, Bool ->
+                            ()
+                        | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
+                        Bool
+                    | LessEqual | Less | GreaterEqual | Greater ->
+                        match typeOfE1, typeOfE2 with
+                        | Int, Int
+                        | Int, Float
+                        | Float, Int
+                        | Float, Float ->
+                            ()
+                        | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
+                        Bool
+                    | Add | Subtract | Multiply | Divide | Modulus ->
+                        typeOfE1 // TODO: Widen int to float
+                | UnaryExpression(_, e) ->
+                    scanExpression e
+                | IdentifierExpression(i) ->
                     symbolTable.GetIdentifierTypeSpec i
-            | BinaryExpression(e1, op, e2) ->
-                let typeOfE1 = scanExpression e1
-                let typeOfE2 = scanExpression e2
-                match op with
-                | ConditionalOr | ConditionalAnd ->
-                    match typeOfE1, typeOfE2 with
-                    | Bool, Bool -> ()
-                    | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
-                    Bool
-                | Equal | NotEqual ->
-                    match typeOfE1, typeOfE2 with
-                    | Int, Int
-                    | Int, Float
-                    | Float, Int
-                    | Float, Float
-                    | Bool, Bool ->
-                        ()
-                    | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
-                    Bool
-                | LessEqual | Less | GreaterEqual | Greater ->
-                    match typeOfE1, typeOfE2 with
-                    | Int, Int
-                    | Int, Float
-                    | Float, Int
-                    | Float, Float ->
-                        ()
-                    | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
-                    Bool
-                | Add | Subtract | Multiply | Divide | Modulus ->
-                    typeOfE1 // TODO: Widen int to float
-            | UnaryExpression(_, e) ->
-                scanExpression e
-            | IdentifierExpression(i) ->
-                symbolTable.GetIdentifierTypeSpec i
-            | ArrayIdentifierExpression(i, _) ->
-                symbolTable.GetIdentifierTypeSpec i
-            | FunctionCallExpression(i, _) ->
-                if not (functionTable.ContainsKey i) then
-                    raise (CompilerException(sprintf "CS006 The name '%s' does not exist in the current context" i))
-                functionTable.[i]
-            | ArraySizeExpression(i) ->
-                Ast.Int
-            | LiteralExpression(l) ->
-                match l with
-                | BoolLiteral(b)  -> Ast.Bool
-                | IntLiteral(i)   -> Ast.Int
-                | FloatLiteral(f) -> Ast.Float
-            | ArrayAllocationExpression(t, _) ->
-                t
+                | ArrayIdentifierExpression(i, _) ->
+                    symbolTable.GetIdentifierTypeSpec i
+                | FunctionCallExpression(i, _) ->
+                    if not (functionTable.ContainsKey i) then
+                        raise (CompilerException(sprintf "CS006 The name '%s' does not exist in the current context" i))
+                    functionTable.[i]
+                | ArraySizeExpression(i) ->
+                    Ast.Int
+                | LiteralExpression(l) ->
+                    match l with
+                    | BoolLiteral(b)  -> Ast.Bool
+                    | IntLiteral(i)   -> Ast.Int
+                    | FloatLiteral(f) -> Ast.Float
+                | ArrayAllocationExpression(t, _) ->
+                    t
 
-        self.Add(expression, expressionType)
+            self.Add(expression, expressionType)
 
-        expressionType
+            expressionType
+
+        scanCompoundStatement compoundStatement
 
     do program |> List.iter scanDeclaration
 
