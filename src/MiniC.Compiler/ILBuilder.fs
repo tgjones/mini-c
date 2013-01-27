@@ -11,7 +11,7 @@ type private ILVariableScope =
 
 type private VariableMappingDictionary = Dictionary<Ast.VariableDeclaration, ILVariableScope>
 
-module ILBuilderUtilities =
+module private ILBuilderUtilities =
     let typeOf =
         function
         | Ast.Void  -> typeof<System.Void>
