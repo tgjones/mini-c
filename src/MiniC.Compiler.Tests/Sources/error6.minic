@@ -1,0 +1,12 @@
+﻿void main(void) {
+	bool x;
+	int y;
+
+	x = true;
+	y = 3;
+
+	if(x < y)
+		return 42;
+	else
+		return -42;
+}

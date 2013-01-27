@@ -74,6 +74,7 @@ let ``can compile, save and execute application with I/O``() =
 [<TestCase("error3.minic", "CS001 Lexer error: Invalid character '^'")>]
 [<TestCase("error4.minic", "CS004 Cannot convert type 'bool' to 'int'")>]
 [<TestCase("error5.minic", "CS002 Parser error: Illegal token [a-zA-Z_][a-zA-Z_0-9]*. Expected \+,-,\*,\(,\),\[,\],;,,,%,/,=,\|\|,==,!=,<=,<,>=,>,&&,\.")>]
+[<TestCase("error6.minic", "CS005 Operator '<' cannot be applied to operands of type 'bool' and 'int'")>]
 let ``can detect semantic errors`` sourceFile (compilerError : string) =
     let code = File.ReadAllText(Path.Combine("Sources", sourceFile))
     Assert.That(

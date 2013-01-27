@@ -1,6 +1,4 @@
-﻿//[4] : syntax error
-
-void main(void) {
-  garbage_type x;
-  x = 3;
+﻿void main(void) {
+  does_not_exist x;
+  x = 2;
 }
