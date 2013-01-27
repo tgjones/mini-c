@@ -1,0 +1,6 @@
+﻿void main(void) {
+	if (true || 42)
+		return;
+	else
+		return;
+}
