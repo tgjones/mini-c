@@ -177,29 +177,29 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
             | AssignmentExpression(ae) as x ->
                 match ae with
                 | ScalarAssignmentExpression(i, e) ->
-                    let eType = scanExpression e
-                    let iType = symbolTable.GetIdentifierTypeSpec i
-                    if eType <> iType then raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (eType.ToString()) (iType.ToString())))
-                    iType
+                    let typeOfE = scanExpression e
+                    let typeOfI = symbolTable.GetIdentifierTypeSpec i
+                    if typeOfE <> typeOfI then raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (typeOfE.ToString()) (typeOfI.ToString())))
+                    typeOfI
                 | ArrayAssignmentExpression(i, _, _) ->
                     symbolTable.GetIdentifierTypeSpec i
-            | BinaryExpression(e1, ConditionalOr, e2)
-            | BinaryExpression(e1, Equal, e2)
-            | BinaryExpression(e1, NotEqual, e2)
-            | BinaryExpression(e1, LessEqual, e2)
-            | BinaryExpression(e1, Less, e2)
-            | BinaryExpression(e1, GreaterEqual, e2)
-            | BinaryExpression(e1, Greater, e2)
-            | BinaryExpression(e1, ConditionalAnd, e2) ->
-                Bool
-                //scanExpression e1
-                // scanExpression e2 // TODO: Check that e1 and e2 have the same type.
-            | BinaryExpression(e1, Add, e2)
-            | BinaryExpression(e1, Subtract, e2)
-            | BinaryExpression(e1, Multiply, e2)
-            | BinaryExpression(e1, Divide, e2)
-            | BinaryExpression(e1, Modulus, e2) ->
-                scanExpression e1 // TODO: Widen int to float
+            | BinaryExpression(e1, op, e2) ->
+                match op with
+                | ConditionalOr | Equal | NotEqual | ConditionalAnd ->
+                    Bool
+                | LessEqual | Less | GreaterEqual | Greater ->
+                    let typeOfE1 = scanExpression e1
+                    let typeOfE2 = scanExpression e2
+                    match typeOfE1, typeOfE2 with
+                    | Int, Int
+                    | Int, Float
+                    | Float, Int
+                    | Float, Float ->
+                        ()
+                    | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
+                    Bool
+                | Add | Subtract | Multiply | Divide | Modulus ->
+                    scanExpression e1 // TODO: Widen int to float
             | UnaryExpression(_, e) ->
                 scanExpression e
             | IdentifierExpression(i) ->

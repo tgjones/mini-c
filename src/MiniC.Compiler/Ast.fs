@@ -79,6 +79,21 @@ and BinaryOperator =
     | Multiply
     | Divide
     | Modulus
+    override x.ToString() =
+        match x with
+        | ConditionalOr  -> "||"
+        | Equal          -> "=="
+        | NotEqual       -> "!-"
+        | LessEqual      -> "<="
+        | Less           -> "<"
+        | GreaterEqual   -> ">="
+        | Greater        -> ">"
+        | ConditionalAnd -> "&&"
+        | Add            -> "+"
+        | Subtract       -> "-"
+        | Multiply       -> "*"
+        | Divide         -> "/"
+        | Modulus        -> "%"
 
 and UnaryOperator =
     | LogicalNegate
