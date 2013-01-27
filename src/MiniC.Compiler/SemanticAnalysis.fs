@@ -46,6 +46,7 @@ type FunctionTable(program) as self =
         | FunctionDeclaration(t, i, _, _) -> self.Add(i, t)
 
     do
+        // First add built-in methods
         self.Add("iread", Int)
         self.Add("iprint", Void)
         self.Add("fread", Float)
@@ -220,6 +221,8 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
             | ArrayIdentifierExpression(i, _) ->
                 symbolTable.GetIdentifierTypeSpec i
             | FunctionCallExpression(i, _) ->
+                if not (functionTable.ContainsKey i) then
+                    raise (CompilerException(sprintf "CS006 The name '%s' does not exist in the current context" i))
                 functionTable.[i]
             | ArraySizeExpression(i) ->
                 Ast.Int
