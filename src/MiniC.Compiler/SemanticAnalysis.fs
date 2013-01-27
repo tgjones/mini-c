@@ -3,6 +3,8 @@
 open System.Collections.Generic
 open Ast
 
+exception SemanticAnalysisException of string
+
 type private SymbolScope(parent : SymbolScope option) =
     let mutable list = List.empty<VariableDeclaration>
     let declaresIdentifier (identifierRef : IdentifierRef) =
