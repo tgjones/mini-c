@@ -1,5 +1,6 @@
 ﻿module MiniC.Compiler.Tests.CompilerTests
 
+open System
 open System.Diagnostics
 open System.IO
 open System.Reflection
@@ -29,7 +30,6 @@ let canCompileAndRunAssemblyInMemory() =
 [<TestCase("test4.minic", Result = 9)>]
 [<TestCase("test5.minic", Result = 127)>]
 [<TestCase("test6.minic", Result = 15)>]
-[<TestCase("test7.minic", Result = -1)>]
 let canCompileSaveAndExecuteConsoleApplicationWithCorrectReturnValue sourceFile =
     let code = File.ReadAllText(Path.Combine("Sources", sourceFile))
     let targetFileName = Path.Combine("Sources", Path.GetFileNameWithoutExtension(sourceFile) + ".exe")
@@ -39,3 +39,32 @@ let canCompileSaveAndExecuteConsoleApplicationWithCorrectReturnValue sourceFile 
     testProcess.WaitForExit()
     
     testProcess.ExitCode
+
+[<Test>]
+let ``can compile, save and execute application with I/O``() =
+    let sourceFile = "test7.minic"
+    let code = File.ReadAllText(Path.Combine("Sources", sourceFile))
+    let targetFileName = Path.Combine("Sources", Path.GetFileNameWithoutExtension(sourceFile) + ".exe")
+    Compiler.compileToFile targetFileName code
+
+    let processStartInfo = ProcessStartInfo(targetFileName)
+    processStartInfo.RedirectStandardInput <- true
+    processStartInfo.RedirectStandardOutput <- true
+    processStartInfo.UseShellExecute <- false
+    let testProcess = Process.Start(processStartInfo)
+
+    let output = ref ""
+    testProcess.OutputDataReceived.Add (fun args -> output := !output + args.Data + "\n")
+
+    testProcess.BeginOutputReadLine()
+
+    let inputStream = testProcess.StandardInput
+    inputStream.WriteLine "9"
+    inputStream.WriteLine "200"
+
+    inputStream.Close()
+
+    testProcess.WaitForExit()
+    
+    Assert.That(testProcess.ExitCode, Is.EqualTo 0)
+    Assert.That(!output, Is.EqualTo ("3\n400\n\n"))
