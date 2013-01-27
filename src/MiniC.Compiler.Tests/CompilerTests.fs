@@ -78,6 +78,7 @@ let ``can compile, save and execute application with I/O``() =
 [<TestCase("error7.minic", "CS005 Operator '!=' cannot be applied to operands of type 'bool' and 'int'")>]
 [<TestCase("error8.minic", "CS005 Operator '||' cannot be applied to operands of type 'bool' and 'int'")>]
 [<TestCase("error9.minic", "CS006 The name 'foo' does not exist in the current context")>]
+[<TestCase("error10.minic", "CS004 Cannot convert type 'bool' to 'void'")>]
 let ``can detect semantic errors`` sourceFile (compilerError : string) =
     let code = File.ReadAllText(Path.Combine("Sources", sourceFile))
     Assert.That(
