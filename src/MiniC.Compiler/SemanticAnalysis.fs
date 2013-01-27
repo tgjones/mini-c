@@ -184,12 +184,20 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                 | ArrayAssignmentExpression(i, _, _) ->
                     symbolTable.GetIdentifierTypeSpec i
             | BinaryExpression(e1, op, e2) ->
+                let typeOfE1 = scanExpression e1
+                let typeOfE2 = scanExpression e2
                 match op with
                 | ConditionalOr | Equal | NotEqual | ConditionalAnd ->
+                    match typeOfE1, typeOfE2 with
+                    | Int, Int
+                    | Int, Float
+                    | Float, Int
+                    | Float, Float
+                    | Bool, Bool ->
+                        ()
+                    | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
                     Bool
                 | LessEqual | Less | GreaterEqual | Greater ->
-                    let typeOfE1 = scanExpression e1
-                    let typeOfE2 = scanExpression e2
                     match typeOfE1, typeOfE2 with
                     | Int, Int
                     | Int, Float

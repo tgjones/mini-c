@@ -83,7 +83,7 @@ and BinaryOperator =
         match x with
         | ConditionalOr  -> "||"
         | Equal          -> "=="
-        | NotEqual       -> "!-"
+        | NotEqual       -> "!="
         | LessEqual      -> "<="
         | Less           -> "<"
         | GreaterEqual   -> ">="
