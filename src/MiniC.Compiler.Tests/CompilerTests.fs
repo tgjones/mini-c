@@ -13,7 +13,7 @@ let cleanup() =
         Directory.Delete("Binaries", true)
 
 [<Test>]
-let canCompileAndRunAssemblyInMemory() =
+let ``can compile and run assembly in memory``() =
     let code = "int main(void) { return 123; }"
     let (compiledType, entryPoint) = Compiler.compileToMemory (new AssemblyName "Foo") code
     
@@ -30,7 +30,7 @@ let canCompileAndRunAssemblyInMemory() =
 [<TestCase("test4.minic", Result = 9)>]
 [<TestCase("test5.minic", Result = 127)>]
 [<TestCase("test6.minic", Result = 15)>]
-let canCompileSaveAndExecuteConsoleApplicationWithCorrectReturnValue sourceFile =
+let ``can compile, save and execute console application with correct return value`` sourceFile =
     let code = File.ReadAllText(Path.Combine("Sources", sourceFile))
     let targetFileName = Path.Combine("Sources", Path.GetFileNameWithoutExtension(sourceFile) + ".exe")
     Compiler.compileToFile targetFileName code
