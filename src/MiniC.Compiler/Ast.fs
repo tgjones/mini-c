@@ -11,6 +11,12 @@ and TypeSpec =
     | Bool
     | Int
     | Float
+    override x.ToString() =
+        match x with
+        | Void  -> "void"
+        | Bool  -> "bool"
+        | Int   -> "int"
+        | Float -> "float"
 
 and VariableDeclaration = 
     | ScalarVariableDeclaration of TypeSpec * Identifier

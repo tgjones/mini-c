@@ -176,13 +176,30 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
             match expression with
             | AssignmentExpression(ae) as x ->
                 match ae with
-                | ScalarAssignmentExpression(i, _) ->
-                    symbolTable.GetIdentifierTypeSpec i
+                | ScalarAssignmentExpression(i, e) ->
+                    let eType = scanExpression e
+                    let iType = symbolTable.GetIdentifierTypeSpec i
+                    if eType <> iType then raise (CompilerException (sprintf "CS003 Cannot convert type '%s' to '%s'" (eType.ToString()) (iType.ToString())))
+                    iType
                 | ArrayAssignmentExpression(i, _, _) ->
                     symbolTable.GetIdentifierTypeSpec i
-            | BinaryExpression(e1, _, e2) ->
-                scanExpression e1
+            | BinaryExpression(e1, ConditionalOr, e2)
+            | BinaryExpression(e1, Equal, e2)
+            | BinaryExpression(e1, NotEqual, e2)
+            | BinaryExpression(e1, LessEqual, e2)
+            | BinaryExpression(e1, Less, e2)
+            | BinaryExpression(e1, GreaterEqual, e2)
+            | BinaryExpression(e1, Greater, e2)
+            | BinaryExpression(e1, ConditionalAnd, e2) ->
+                Bool
+                //scanExpression e1
                 // scanExpression e2 // TODO: Check that e1 and e2 have the same type.
+            | BinaryExpression(e1, Add, e2)
+            | BinaryExpression(e1, Subtract, e2)
+            | BinaryExpression(e1, Multiply, e2)
+            | BinaryExpression(e1, Divide, e2)
+            | BinaryExpression(e1, Modulus, e2) ->
+                scanExpression e1 // TODO: Widen int to float
             | UnaryExpression(_, e) ->
                 scanExpression e
             | IdentifierExpression(i) ->
