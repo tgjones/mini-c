@@ -69,10 +69,11 @@ let ``can compile, save and execute application with I/O``() =
     Assert.That(testProcess.ExitCode, Is.EqualTo 0)
     Assert.That(!output, Is.EqualTo ("3\n400\n\n"))
 
-[<TestCase("error1.minic", "CS001 A variable named 'x' is already defined in this scope")>]
-[<TestCase("error2.minic", "CS001 A variable named 'y' is already defined in this scope")>]
-[<TestCase("error3.minic", "CS002 Lexer error: Invalid character '^'")>]
-[<TestCase("error4.minic", "CS003 Cannot convert type 'bool' to 'int'")>]
+[<TestCase("error1.minic", "CS003 A variable named 'x' is already defined in this scope")>]
+[<TestCase("error2.minic", "CS003 A variable named 'y' is already defined in this scope")>]
+[<TestCase("error3.minic", "CS001 Lexer error: Invalid character '^'")>]
+[<TestCase("error4.minic", "CS004 Cannot convert type 'bool' to 'int'")>]
+[<TestCase("error5.minic", "CS002 Parser error: Illegal token [a-zA-Z_][a-zA-Z_0-9]*. Expected \+,-,\*,\(,\),\[,\],;,,,%,/,=,\|\|,==,!=,<=,<,>=,>,&&,\.")>]
 let ``can detect semantic errors`` sourceFile (compilerError : string) =
     let code = File.ReadAllText(Path.Combine("Sources", sourceFile))
     Assert.That(

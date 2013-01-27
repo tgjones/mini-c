@@ -15,7 +15,7 @@ type private SymbolScope(parent : SymbolScope option) =
 
     member x.AddDeclaration declaration =
         if List.exists (fun x -> identifierFromDeclaration x = identifierFromDeclaration declaration) list then
-            raise (CompilerException(sprintf "CS001 A variable named '%s' is already defined in this scope" (identifierFromDeclaration declaration)))
+            raise (CompilerException(sprintf "CS003 A variable named '%s' is already defined in this scope" (identifierFromDeclaration declaration)))
         list <- declaration :: list
 
     member x.FindDeclaration identifierRef =
@@ -179,7 +179,7 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                 | ScalarAssignmentExpression(i, e) ->
                     let eType = scanExpression e
                     let iType = symbolTable.GetIdentifierTypeSpec i
-                    if eType <> iType then raise (CompilerException (sprintf "CS003 Cannot convert type '%s' to '%s'" (eType.ToString()) (iType.ToString())))
+                    if eType <> iType then raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (eType.ToString()) (iType.ToString())))
                     iType
                 | ArrayAssignmentExpression(i, _, _) ->
                     symbolTable.GetIdentifierTypeSpec i

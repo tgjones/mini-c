@@ -1,0 +1,6 @@
+﻿//[4] : syntax error
+
+void main(void) {
+  garbage_type x;
+  x = 3;
+}

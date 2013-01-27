@@ -260,4 +260,6 @@ let parse (s : string) =
         parser.Parse(s) :?> Program
     with
         | :? Piglet.Lexer.LexerException as ex ->
-            raise (CompilerException ("CS002 Lexer error: " + ex.Message))
+            raise (CompilerException ("CS001 Lexer error: " + ex.Message))
+        | :? Piglet.Parser.ParseException as ex ->
+            raise (CompilerException ("CS002 Parser error: " + ex.Message))
