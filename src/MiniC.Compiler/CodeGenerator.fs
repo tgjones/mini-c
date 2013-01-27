@@ -33,6 +33,7 @@ type MethodGenerator(typeBuilder : TypeBuilder, ilMethod : ILMethod,
         | Brfalse(l) -> ilGenerator.Emit(OpCodes.Brfalse, getLabel l)
         | Brtrue(l)  -> ilGenerator.Emit(OpCodes.Brtrue, getLabel l)
         | Call(n)    -> ilGenerator.Emit(OpCodes.Call, methodMappings.[n])
+        | CallClr(m) -> ilGenerator.Emit(OpCodes.Call, m)
         | Ceq        -> ilGenerator.Emit(OpCodes.Ceq)
         | Cge        -> ilGenerator.Emit(OpCodes.Clt)
                         ilGenerator.Emit(OpCodes.Ldc_I4_0)

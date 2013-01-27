@@ -21,19 +21,15 @@ let ``can build int return value``() =
     let result = ilBuilder.BuildClass program
     let expected =
         {
-            Fields = [];
-            Methods =
-                [
-                    {
-                        Name       = "main";
-                        ReturnType = typeof<System.Void>;
-                        Parameters = [];
-                        Locals     = [];
-                        Body       = [ IL.Ldc_I4(123); IL.Ret ];
-                    }
-                ];
+            Name       = "main";
+            ReturnType = typeof<System.Void>;
+            Parameters = [];
+            Locals     = [];
+            Body       = [ IL.Ldc_I4(123); IL.Ret ];
         }
-    Assert.That(result, Is.EqualTo(expected))
+    Assert.That(result.Fields, Is.Empty)
+    Assert.That(result.Methods, Has.Length.EqualTo 5)
+    Assert.That(result.Methods.[4], Is.EqualTo expected)
 
 [<Test>]
 let ``can build binary expression``() =
@@ -62,16 +58,12 @@ let ``can build binary expression``() =
     let result = ilBuilder.BuildClass program
     let expected =
         {
-            Fields = [];
-            Methods =
-                [
-                    {
-                        Name       = "main";
-                        ReturnType = typeof<System.Void>;
-                        Parameters = [];
-                        Locals     = [];
-                        Body       = [ IL.Ldc_I4(123); IL.Ldc_I4(456); IL.Add; IL.Ret ];
-                    }
-                ];
+            Name       = "main";
+            ReturnType = typeof<System.Void>;
+            Parameters = [];
+            Locals     = [];
+            Body       = [ IL.Ldc_I4(123); IL.Ldc_I4(456); IL.Add; IL.Ret ];
         }
-    Assert.That(result, Is.EqualTo(expected))
+    Assert.That(result.Fields, Is.Empty)
+    Assert.That(result.Methods, Has.Length.EqualTo 5)
+    Assert.That(result.Methods.[4], Is.EqualTo expected)

@@ -16,5 +16,5 @@ void main(void) {
 	iprint(isqrt(num, num/2));
 
 	f = fread();
-	fprint(f * 2);
+	fprint(f * 2.0);
 }

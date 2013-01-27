@@ -40,7 +40,12 @@ type FunctionTable(program) as self =
         | StaticVariableDeclaration(x)    -> ()
         | FunctionDeclaration(t, i, _, _) -> self.Add(i, t)
 
-    do program |> List.iter scanDeclaration
+    do
+        self.Add("iread", Int)
+        self.Add("iprint", Void)
+        self.Add("fread", Float)
+        self.Add("fprint", Void)
+        program |> List.iter scanDeclaration
 
 type SymbolTable(program) as self =
     inherit Dictionary<IdentifierRef, VariableDeclaration>(HashIdentity.Reference)

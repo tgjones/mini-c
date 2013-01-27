@@ -619,3 +619,64 @@ let ``can parse and ignore comments``() =
             )
         )]
     Assert.That(result, Is.EqualTo(expected))
+
+[<Test>]
+let ``can parse operator precedence``() =
+    let result = Parser.parse "
+        int isqrt(int a, int guess) {
+	        int x;
+	        if (guess == (x = (guess + a/guess)/2))
+		        return guess;
+	        return isqrt(a, x);
+        }"
+    let expected =
+        [Ast.FunctionDeclaration(
+            Ast.Int, "isqrt",
+            [
+                Ast.ScalarVariableDeclaration (Ast.Int, "a")
+                Ast.ScalarVariableDeclaration (Ast.Int, "guess")
+            ],
+            (
+                [ Ast.ScalarVariableDeclaration (Ast.Int, "x") ],
+                [
+                    Ast.IfStatement(
+                        Ast.BinaryExpression(
+                            Ast.IdentifierExpression(Ast.IdentifierRef "guess"),
+                            Ast.Equal,
+                            Ast.AssignmentExpression(
+                                Ast.ScalarAssignmentExpression(
+                                    Ast.IdentifierRef "x",
+                                    Ast.BinaryExpression(
+                                        Ast.BinaryExpression(
+                                            Ast.IdentifierExpression(Ast.IdentifierRef "guess"),
+                                            Ast.Add,
+                                            Ast.BinaryExpression(
+                                                Ast.IdentifierExpression(Ast.IdentifierRef "a"),
+                                                Ast.Divide,
+                                                Ast.IdentifierExpression(Ast.IdentifierRef "guess")
+                                            )
+                                        ),
+                                        Ast.Divide,
+                                        Ast.LiteralExpression(Ast.IntLiteral 2)
+                                    )
+                                )
+                            )
+                        ),
+                        Ast.ReturnStatement(Some(Ast.IdentifierExpression(Ast.IdentifierRef "guess"))),
+                        None
+                    )
+                    Ast.ReturnStatement(
+                        Some(
+                            Ast.FunctionCallExpression(
+                                "isqrt",
+                                [
+                                    Ast.IdentifierExpression(Ast.IdentifierRef "a");
+                                    Ast.IdentifierExpression(Ast.IdentifierRef "x")
+                                ]
+                            )
+                        )
+                    )
+                ]
+            )
+        )]
+    Assert.That(result, Is.EqualTo(expected))

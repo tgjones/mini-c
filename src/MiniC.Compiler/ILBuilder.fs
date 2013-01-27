@@ -310,7 +310,46 @@ type ILBuilder(semanticAnalysisResult) =
             let ilMethodBuilder = new ILMethodBuilder(semanticAnalysisResult, variableMappings)
             ilMethodBuilder.BuildMethod functionDeclaration
 
+        let builtInMethods = [
+            {
+                Name = "iread";
+                ReturnType = typeof<int>;
+                Parameters = [];
+                Locals = [];
+                Body = [ CallClr(typeof<System.Console>.GetMethod("ReadLine"))
+                         CallClr(typeof<System.Convert>.GetMethod("ToInt32", [| typeof<string> |]))
+                         Ret ];
+            };
+            {
+                Name = "fread";
+                ReturnType = typeof<float>;
+                Parameters = [];
+                Locals = [];
+                Body = [ CallClr(typeof<System.Console>.GetMethod("ReadLine"))
+                         CallClr(typeof<System.Convert>.GetMethod("ToDouble", [| typeof<string> |]))
+                         Ret ];
+            };
+            {
+                Name = "iprint";
+                ReturnType = typeof<System.Void>;
+                Parameters = [ { Type = typeof<int>; Name = "value"; }];
+                Locals = [];
+                Body = [ Ldarg(0s)
+                         CallClr(typeof<System.Console>.GetMethod("WriteLine", [| typeof<int> |]))
+                         Ret ];
+            };
+            {
+                Name = "fprint";
+                ReturnType = typeof<System.Void>;
+                Parameters = [ { Type = typeof<float>; Name = "value"; }];
+                Locals = [];
+                Body = [ Ldarg(0s)
+                         CallClr(typeof<System.Console>.GetMethod("WriteLine", [| typeof<float> |]))
+                         Ret ];
+            } ]
+
         {
             Fields  = variableDeclarations |> List.map processStaticVariableDeclaration;
-            Methods = functionDeclarations |> List.map processFunctionDeclaration;
+            Methods = List.concat [ builtInMethods
+                                    functionDeclarations |> List.map processFunctionDeclaration ];
         }

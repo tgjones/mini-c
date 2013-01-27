@@ -31,6 +31,7 @@ and ILOpCode =
     | Brfalse of ILLabel
     | Brtrue of ILLabel
     | Call of string
+    | CallClr of System.Reflection.MethodInfo
     | Ceq
     | Cge
     | Cgt
