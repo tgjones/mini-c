@@ -255,4 +255,9 @@ configurator.LexerSettings.Ignore <- [| @"\s+"; @"/\*[^(\*/)]*\*/"; @"//[^\n]*\n
 
 let parser = configurator.CreateParser()
 
-let parse (s : string) = parser.Parse(s) :?> Program
+let parse (s : string) =
+    try
+        parser.Parse(s) :?> Program
+    with
+        | :? Piglet.Lexer.LexerException as ex ->
+            raise (CompilerException ("CS002 Lexer error: " + ex.Message))
