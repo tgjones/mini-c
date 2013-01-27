@@ -1,0 +1,7 @@
+﻿bool test(bool i) {
+  return !i;
+}
+
+void main(void) {
+  test(3);
+}
