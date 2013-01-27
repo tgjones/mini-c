@@ -3,16 +3,19 @@
 open System.Collections.Generic
 open Ast
 
-exception SemanticAnalysisException of string
-
 type private SymbolScope(parent : SymbolScope option) =
     let mutable list = List.empty<VariableDeclaration>
-    let declaresIdentifier (identifierRef : IdentifierRef) =
+    let identifierFromDeclaration =
         function
-        | ScalarVariableDeclaration(t, i) -> i = identifierRef.Identifier
-        | ArrayVariableDeclaration(t, i) -> i = identifierRef.Identifier
+        | ScalarVariableDeclaration(_, i)
+        | ArrayVariableDeclaration(_, i) -> i
+
+    let declaresIdentifier (identifierRef : IdentifierRef) declaration =
+        (identifierFromDeclaration declaration) = identifierRef.Identifier
 
     member x.AddDeclaration declaration =
+        if List.exists (fun x -> true) list then
+            raise (CompilerException(sprintf "CS001 A variable named '%s' is already defined in this scope" (identifierFromDeclaration declaration)))
         list <- declaration :: list
 
     member x.FindDeclaration identifierRef =

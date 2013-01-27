@@ -69,9 +69,9 @@ let ``can compile, save and execute application with I/O``() =
     Assert.That(testProcess.ExitCode, Is.EqualTo 0)
     Assert.That(!output, Is.EqualTo ("3\n400\n\n"))
 
-[<TestCase("error1.minic", "CS001 A static variable named 'x' is already defined")>]
+[<TestCase("error1.minic", "CS001 A variable named 'x' is already defined in this scope")>]
 let ``can detect semantic errors`` sourceFile (compilerError : string) =
     let code = File.ReadAllText(Path.Combine("Sources", sourceFile))
     Assert.That(
         (fun () -> Compiler.compileToMemory (AssemblyName(Path.GetFileNameWithoutExtension sourceFile)) code |> ignore),
-        Throws.TypeOf<SemanticAnalysis.SemanticAnalysisException>().With.Message.EqualTo compilerError)
+        Throws.TypeOf<CompilerException>().With.Message.EqualTo compilerError)
