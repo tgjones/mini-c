@@ -2,5 +2,5 @@
 bool x;
 
 void main(void) {
-  return;
+	return;
 }

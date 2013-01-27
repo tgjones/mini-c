@@ -72,6 +72,7 @@ let ``can compile, save and execute application with I/O``() =
 [<TestCase("error1.minic", "CS001 A variable named 'x' is already defined in this scope")>]
 [<TestCase("error2.minic", "CS001 A variable named 'y' is already defined in this scope")>]
 [<TestCase("error3.minic", "CS002 Lexer error: Invalid character '^'")>]
+[<TestCase("error4.minic", "CS003 Cannot convert type 'bool' to 'int'")>]
 let ``can detect semantic errors`` sourceFile (compilerError : string) =
     let code = File.ReadAllText(Path.Combine("Sources", sourceFile))
     Assert.That(
