@@ -198,9 +198,9 @@ returnStatement.AddProduction(returnKeyword, semicolon)            .SetReduceFun
 breakStatement.AddProduction(breakKeyword, semicolon).SetReduceFunction (fun _ _ -> ())
 
 expression.AddProduction(identifier, singleEquals, expression)
-    .SetReduceFunction (fun a _ c -> Ast.AssignmentExpression(Ast.ScalarAssignmentExpression(IdentifierRef(a), c)))
+    .SetReduceFunction (fun a _ c -> Ast.AssignmentExpression(Ast.ScalarAssignmentExpression({ Identifier = a }, c)))
 expression.AddProduction(identifier, openSquare, expression, closeSquare, singleEquals, expression)
-    .SetReduceFunction (fun a _ c _ _ f -> Ast.AssignmentExpression(Ast.ArrayAssignmentExpression(IdentifierRef(a), c, f)))
+    .SetReduceFunction (fun a _ c _ _ f -> Ast.AssignmentExpression(Ast.ArrayAssignmentExpression({ Identifier = a }, c, f)))
 
 expression.AddProduction(expression, doublePipes, expression).SetReduceFunction (fun a _ c -> Ast.BinaryExpression(a, Ast.ConditionalOr, c))
 expression.AddProduction(expression, doubleEquals, expression).SetReduceFunction (fun a _ c -> Ast.BinaryExpression(a, Ast.Equal, c))
@@ -222,13 +222,13 @@ unaryExpressionProduction.SetPrecedence unaryExpressionPrecedenceGroup
 
 expression.AddProduction(openParen, expression, closeParen).SetReduceFunction (fun _ b _ -> b)
 
-expression.AddProduction(identifier).SetReduceFunction (fun a -> Ast.IdentifierExpression (IdentifierRef a))
+expression.AddProduction(identifier).SetReduceFunction (fun a -> Ast.IdentifierExpression ({ Identifier = a }))
 expression.AddProduction(identifier, openSquare, expression, closeSquare)
-    .SetReduceFunction (fun a _ c _ -> Ast.ArrayIdentifierExpression(IdentifierRef a, c))
+    .SetReduceFunction (fun a _ c _ -> Ast.ArrayIdentifierExpression({ Identifier = a }, c))
 expression.AddProduction(identifier, openParen, optionalArguments, closeParen)
     .SetReduceFunction (fun a _ c _ -> Ast.FunctionCallExpression(a, c))
 expression.AddProduction(identifier, period, sizeKeyword)
-    .SetReduceFunction (fun a _ _ -> Ast.ArraySizeExpression (IdentifierRef a))
+    .SetReduceFunction (fun a _ _ -> Ast.ArraySizeExpression { Identifier = a })
 
 expression.AddProduction(trueLiteral) .SetReduceFunction (fun a -> Ast.LiteralExpression a)
 expression.AddProduction(falseLiteral).SetReduceFunction (fun a -> Ast.LiteralExpression a)

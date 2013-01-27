@@ -22,12 +22,7 @@ and Identifier = string
 
 and Parameters = VariableDeclaration list
 
-and IdentifierRef(identifier : Identifier) =
-    member x.Identifier = identifier
-    override x.Equals obj =
-        obj :? IdentifierRef && (obj :?> IdentifierRef).Identifier = identifier
-    override x.GetHashCode() =
-        identifier.GetHashCode()
+and IdentifierRef = { Identifier : string; }
 
 and Statement =
     | ExpressionStatement of ExpressionStatement
@@ -45,7 +40,7 @@ and CompoundStatement = LocalDeclarations * Statement list
 
 and LocalDeclarations = VariableDeclaration list
 
-and IfStatement = Expression (* condition *) * Statement (* then *) * Statement option (* else *)
+and IfStatement = Expression * Statement * Statement option
 
 and WhileStatement = Expression * Statement
 

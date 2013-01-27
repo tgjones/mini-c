@@ -142,7 +142,7 @@ let ``can parse parameters and expression``() =
                         Some(
                             Ast.BinaryExpression(
                                 Ast.BinaryExpression(
-                                    Ast.IdentifierExpression(Ast.IdentifierRef "a"),
+                                    Ast.IdentifierExpression { Identifier = "a" },
                                     Ast.Multiply,
                                     Ast.LiteralExpression(Ast.IntLiteral 123)
                                 ),
@@ -176,8 +176,8 @@ let ``can parse if statement``() =
                 [],
                 [
                     Ast.IfStatement(
-                        Ast.IdentifierExpression (Ast.IdentifierRef "b"),
-                        Ast.ReturnStatement(Some(Ast.IdentifierExpression (Ast.IdentifierRef "a"))),
+                        Ast.IdentifierExpression { Identifier = "b" },
+                        Ast.ReturnStatement(Some(Ast.IdentifierExpression { Identifier = "a" })),
                         None
                     )
                     Ast.ReturnStatement(
@@ -185,7 +185,7 @@ let ``can parse if statement``() =
                             Ast.BinaryExpression(
                                 Ast.LiteralExpression(Ast.IntLiteral(1234)),
                                 Ast.Multiply,
-                                Ast.IdentifierExpression(Ast.IdentifierRef "a")
+                                Ast.IdentifierExpression { Identifier = "a" }
                             )
                         )
                     )
@@ -224,13 +224,13 @@ let ``can parse complex arithmetic expression``() =
                                             Ast.BinaryExpression(
                                                 Ast.LiteralExpression(Ast.IntLiteral(1234)),
                                                 Ast.Multiply,
-                                                Ast.IdentifierExpression(Ast.IdentifierRef "z")
+                                                Ast.IdentifierExpression { Identifier = "z" }
                                             ),
                                             Ast.Modulus,
                                             Ast.LiteralExpression(Ast.IntLiteral(456))
                                         ),
                                         Ast.Divide,
-                                        Ast.IdentifierExpression(Ast.IdentifierRef "b")
+                                        Ast.IdentifierExpression { Identifier = "b" }
                                     ),
                                     Ast.Add,
                                     Ast.LiteralExpression(Ast.IntLiteral(789))
@@ -259,7 +259,7 @@ let ``can parse logical negation and unary subtraction expression``() =
                 [],
                 [
                     Ast.IfStatement(
-                        Ast.UnaryExpression (Ast.LogicalNegate, Ast.IdentifierExpression(Ast.IdentifierRef "b")),
+                        Ast.UnaryExpression (Ast.LogicalNegate, Ast.IdentifierExpression { Identifier = "b" }),
                         Ast.ReturnStatement(
                             Some(
                                 Ast.BinaryExpression(
@@ -268,7 +268,7 @@ let ``can parse logical negation and unary subtraction expression``() =
                                         Ast.LiteralExpression(Ast.IntLiteral(1234))
                                     ),
                                     Ast.Multiply,
-                                    Ast.IdentifierExpression(Ast.IdentifierRef "a")
+                                    Ast.IdentifierExpression { Identifier = "a" }
                                 )
                             )
                         ),
@@ -300,8 +300,8 @@ let ``can parse if / else statement``() =
                 [],
                 [
                     Ast.IfStatement(
-                        Ast.IdentifierExpression (Ast.IdentifierRef "b"),
-                        Ast.ReturnStatement(Some(Ast.IdentifierExpression (Ast.IdentifierRef "a"))),
+                        Ast.IdentifierExpression { Identifier = "b" },
+                        Ast.ReturnStatement(Some(Ast.IdentifierExpression { Identifier = "a" })),
                         Some(Ast.ReturnStatement(Some(Ast.LiteralExpression (Ast.IntLiteral 1))))
                     )
                 ]
@@ -325,7 +325,7 @@ let ``can parse while and break statements``() =
                 [],
                 [
                     Ast.WhileStatement(
-                        Ast.IdentifierExpression (Ast.IdentifierRef "b"),
+                        Ast.IdentifierExpression { Identifier = "b" },
                         Ast.BreakStatement
                     )
                     Ast.ReturnStatement(Some(Ast.LiteralExpression (Ast.IntLiteral 1)))
@@ -390,9 +390,9 @@ let ``can parse function call``() =
                         Ast.ReturnStatement(
                             Some(
                                 Ast.BinaryExpression(
-                                    Ast.IdentifierExpression (Ast.IdentifierRef "i"),
+                                    Ast.IdentifierExpression { Identifier = "i" },
                                     Ast.Add,
-                                    Ast.IdentifierExpression (Ast.IdentifierRef "j")
+                                    Ast.IdentifierExpression { Identifier = "j" }
                                 )
                             )
                         )
@@ -411,12 +411,12 @@ let ``can parse function call``() =
                                     "func",
                                     [
                                         Ast.BinaryExpression(
-                                            Ast.IdentifierExpression(Ast.IdentifierRef "i"),
+                                            Ast.IdentifierExpression { Identifier = "i" },
                                             Ast.Add,
                                             Ast.LiteralExpression(Ast.IntLiteral 1)
                                         )
                                         Ast.BinaryExpression(
-                                            Ast.IdentifierExpression(Ast.IdentifierRef "i"),
+                                            Ast.IdentifierExpression { Identifier = "i" },
                                             Ast.Subtract,
                                             Ast.LiteralExpression(Ast.IntLiteral 1)
                                         )
@@ -454,9 +454,9 @@ let ``can parse assignment expressions``() =
                         Ast.Expression(
                             Ast.AssignmentExpression(
                                 Ast.ScalarAssignmentExpression(
-                                    Ast.IdentifierRef "i",
+                                    { Identifier = "i" },
                                     Ast.BinaryExpression(
-                                        Ast.IdentifierExpression(Ast.IdentifierRef "i"),
+                                        Ast.IdentifierExpression { Identifier = "i" },
                                         Ast.Add,
                                         Ast.LiteralExpression(Ast.IntLiteral(1))
                                     )
@@ -468,13 +468,13 @@ let ``can parse assignment expressions``() =
                         Ast.Expression(
                             Ast.AssignmentExpression(
                                 Ast.ArrayAssignmentExpression(
-                                    Ast.IdentifierRef "j",
+                                    { Identifier = "j" },
                                     Ast.BinaryExpression(
-                                        Ast.IdentifierExpression (Ast.IdentifierRef "i"),
+                                        Ast.IdentifierExpression { Identifier = "i" },
                                         Ast.Modulus,
                                         Ast.LiteralExpression(Ast.IntLiteral 2)
                                     ),
-                                    Ast.IdentifierExpression(Ast.IdentifierRef "i")
+                                    Ast.IdentifierExpression { Identifier = "i" }
                                 )
                             )
                         )
@@ -483,13 +483,13 @@ let ``can parse assignment expressions``() =
                         Ast.Expression(
                             Ast.AssignmentExpression(
                                 Ast.ScalarAssignmentExpression(
-                                    Ast.IdentifierRef "k",
+                                    { Identifier = "k" },
                                     Ast.LiteralExpression(Ast.FloatLiteral(1.25))
                                 )
                             )
                         )
                     )
-                    Ast.ReturnStatement(Some(Ast.IdentifierExpression (Ast.IdentifierRef "i")))
+                    Ast.ReturnStatement(Some(Ast.IdentifierExpression { Identifier = "i" }))
                 ]
             )
         )]
@@ -517,11 +517,11 @@ let ``can parse array expressions``() =
                         Ast.Expression(
                             Ast.AssignmentExpression(
                                 Ast.ScalarAssignmentExpression(
-                                    Ast.IdentifierRef "i",
+                                    { Identifier = "i" },
                                     Ast.ArrayIdentifierExpression(
-                                        Ast.IdentifierRef "j",
+                                        { Identifier = "j" },
                                         Ast.BinaryExpression(
-                                            Ast.IdentifierExpression(Ast.IdentifierRef "i"),
+                                            Ast.IdentifierExpression { Identifier = "i" },
                                             Ast.Multiply,
                                             Ast.BinaryExpression(
                                                 Ast.LiteralExpression(Ast.IntLiteral 1),
@@ -538,8 +538,8 @@ let ``can parse array expressions``() =
                         Ast.Expression(
                             Ast.AssignmentExpression(
                                 Ast.ScalarAssignmentExpression(
-                                    Ast.IdentifierRef "i",
-                                    Ast.ArraySizeExpression (Ast.IdentifierRef "j")
+                                    { Identifier = "i" },
+                                    Ast.ArraySizeExpression { Identifier = "j" }
                                 )
                             )
                         )
@@ -548,11 +548,11 @@ let ``can parse array expressions``() =
                         Ast.Expression(
                             Ast.AssignmentExpression(
                                 Ast.ScalarAssignmentExpression(
-                                    Ast.IdentifierRef "j",
+                                    { Identifier = "j" },
                                     Ast.ArrayAllocationExpression(
                                         Ast.Int,
                                         Ast.BinaryExpression(
-                                            Ast.ArraySizeExpression (Ast.IdentifierRef "j"),
+                                            Ast.ArraySizeExpression { Identifier = "j" },
                                             Ast.Multiply,
                                             Ast.LiteralExpression(Ast.IntLiteral 2)
                                         )
@@ -641,19 +641,19 @@ let ``can parse operator precedence``() =
                 [
                     Ast.IfStatement(
                         Ast.BinaryExpression(
-                            Ast.IdentifierExpression(Ast.IdentifierRef "guess"),
+                            Ast.IdentifierExpression { Identifier = "guess" },
                             Ast.Equal,
                             Ast.AssignmentExpression(
                                 Ast.ScalarAssignmentExpression(
-                                    Ast.IdentifierRef "x",
+                                    { Identifier = "x" },
                                     Ast.BinaryExpression(
                                         Ast.BinaryExpression(
-                                            Ast.IdentifierExpression(Ast.IdentifierRef "guess"),
+                                            Ast.IdentifierExpression { Identifier = "guess" },
                                             Ast.Add,
                                             Ast.BinaryExpression(
-                                                Ast.IdentifierExpression(Ast.IdentifierRef "a"),
+                                                Ast.IdentifierExpression { Identifier = "a" },
                                                 Ast.Divide,
-                                                Ast.IdentifierExpression(Ast.IdentifierRef "guess")
+                                                Ast.IdentifierExpression { Identifier = "guess" }
                                             )
                                         ),
                                         Ast.Divide,
@@ -662,7 +662,7 @@ let ``can parse operator precedence``() =
                                 )
                             )
                         ),
-                        Ast.ReturnStatement(Some(Ast.IdentifierExpression(Ast.IdentifierRef "guess"))),
+                        Ast.ReturnStatement(Some(Ast.IdentifierExpression { Identifier = "guess" })),
                         None
                     )
                     Ast.ReturnStatement(
@@ -670,8 +670,8 @@ let ``can parse operator precedence``() =
                             Ast.FunctionCallExpression(
                                 "isqrt",
                                 [
-                                    Ast.IdentifierExpression(Ast.IdentifierRef "a");
-                                    Ast.IdentifierExpression(Ast.IdentifierRef "x")
+                                    Ast.IdentifierExpression { Identifier = "a" }
+                                    Ast.IdentifierExpression { Identifier = "x" }
                                 ]
                             )
                         )

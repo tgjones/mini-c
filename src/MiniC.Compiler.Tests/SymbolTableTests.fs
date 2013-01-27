@@ -12,8 +12,8 @@ let ``can find declaration in symbol table``() =
     let localDeclarationB1 = Ast.ScalarVariableDeclaration(Ast.Bool, "b")
     let localDeclarationA2 = Ast.ScalarVariableDeclaration(Ast.Int, "a")
     let localDeclarationC1 = Ast.ArrayVariableDeclaration(Ast.Int, "c")
-    let identifier1 = Ast.IdentifierRef "a"
-    let identifier2 = Ast.IdentifierRef "a"
+    let identifier1 = { Ast.Identifier = "a" }
+    let identifier2 = { Ast.Identifier = "a" }
     let identifierExpression1 = Ast.IdentifierExpression identifier1
     let identifierExpression2 = Ast.IdentifierExpression identifier2
     let program =
