@@ -1,0 +1,6 @@
+﻿void main(void) {
+	int i[];
+
+	i = new int[3];
+	i[true] = 0;
+}

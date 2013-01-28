@@ -1,0 +1,6 @@
+﻿int main(void) {
+	int i[];
+
+	i = new int[3];
+	return i[1.0];
+}
