@@ -77,78 +77,78 @@ type SymbolTable(program) as self =
         | StaticVariableDeclaration(x) -> symbolScopeStack.AddDeclaration x
         | FunctionDeclaration(x)       -> scanFunctionDeclaration x
 
-    and scanFunctionDeclaration (_, _, parameters, compoundStatement) =
+    and scanFunctionDeclaration (functionReturnType, _, parameters, compoundStatement) =
+        let rec scanCompoundStatement (localDeclarations, statements) =
+            symbolScopeStack.Push()
+            localDeclarations |> List.iter (fun d -> symbolScopeStack.AddDeclaration d)
+            statements |> List.iter scanStatement
+            symbolScopeStack.Pop() |> ignore
+
+        and scanStatement =
+            function
+            | ExpressionStatement(es) ->
+                match es with
+                | Expression(e) -> scanExpression e
+                | Nop -> ()
+            | CompoundStatement(x) -> scanCompoundStatement x
+            | IfStatement(e, s1, Some(s2)) ->
+                scanExpression e
+                scanStatement s1
+                scanStatement s2
+            | IfStatement(e, s1, None) ->
+                scanExpression e
+                scanStatement s1
+            | WhileStatement(e, s) ->
+                whileStatementStack.Push (e, s)
+                scanExpression e
+                scanStatement s
+                whileStatementStack.Pop() |> ignore
+            | ReturnStatement(Some(e)) ->
+                scanExpression e
+            | ReturnStatement(None) ->
+                if functionReturnType <> Void then
+                    raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (Void.ToString()) (functionReturnType.ToString())))
+            | BreakStatement ->
+                if whileStatementStack.Count = 0 then
+                    raise (CompilerException "CS009 No enclosing loop out of which to break")
+
+        and addIdentifierMapping identifierRef =
+            let declaration = symbolScopeStack.CurrentScope.FindDeclaration identifierRef
+            self.Add(identifierRef, declaration)
+
+        and scanExpression =
+            function
+            | AssignmentExpression(ae) ->
+                match ae with
+                | ScalarAssignmentExpression(i, e) ->
+                    addIdentifierMapping i
+                    scanExpression e
+                | ArrayAssignmentExpression(i, e1, e2) ->
+                    addIdentifierMapping i
+                    scanExpression e1
+                    scanExpression e2
+            | BinaryExpression(e1, _, e2) ->
+                scanExpression e1
+                scanExpression e2
+            | UnaryExpression(_, e) ->
+                scanExpression e
+            | IdentifierExpression(i) ->
+                addIdentifierMapping i
+            | ArrayIdentifierExpression(i, e) ->
+                addIdentifierMapping i
+                scanExpression e
+            | FunctionCallExpression(_, args) ->
+                args |> List.iter scanExpression
+            | ArraySizeExpression(i) ->
+                addIdentifierMapping i
+            | LiteralExpression(l) -> ()
+            | ArrayAllocationExpression(_, e) ->
+                scanExpression e
+
         symbolScopeStack.Push()
         parameters |> List.iter symbolScopeStack.AddDeclaration
         scanCompoundStatement compoundStatement
         symbolScopeStack.Pop() |> ignore
-
-    and scanCompoundStatement (localDeclarations, statements) =
-        symbolScopeStack.Push()
-        localDeclarations |> List.iter (fun d -> symbolScopeStack.AddDeclaration d)
-        statements |> List.iter scanStatement
-        symbolScopeStack.Pop() |> ignore
-
-    and scanStatement =
-        function
-        | ExpressionStatement(es) ->
-            match es with
-            | Expression(e) -> scanExpression e
-            | Nop -> ()
-        | CompoundStatement(x) -> scanCompoundStatement x
-        | IfStatement(e, s1, Some(s2)) ->
-            scanExpression e
-            scanStatement s1
-            scanStatement s2
-        | IfStatement(e, s1, None) ->
-            scanExpression e
-            scanStatement s1
-        | WhileStatement(e, s) ->
-            whileStatementStack.Push (e, s)
-            scanExpression e
-            scanStatement s
-            whileStatementStack.Pop() |> ignore
-        | ReturnStatement(Some(e)) ->
-            scanExpression e
-//        | ReturnStatement(None) ->
-//            
-        | BreakStatement ->
-            if whileStatementStack.Count = 0 then
-                raise (CompilerException "CS009 No enclosing loop out of which to break")
-        | _ -> ()
-
-    and addIdentifierMapping identifierRef =
-        let declaration = symbolScopeStack.CurrentScope.FindDeclaration identifierRef
-        self.Add(identifierRef, declaration)
-
-    and scanExpression =
-        function
-        | AssignmentExpression(ae) ->
-            match ae with
-            | ScalarAssignmentExpression(i, e) ->
-                addIdentifierMapping i
-                scanExpression e
-            | ArrayAssignmentExpression(i, e1, e2) ->
-                addIdentifierMapping i
-                scanExpression e1
-                scanExpression e2
-        | BinaryExpression(e1, _, e2) ->
-            scanExpression e1
-            scanExpression e2
-        | UnaryExpression(_, e) ->
-            scanExpression e
-        | IdentifierExpression(i) ->
-            addIdentifierMapping i
-        | ArrayIdentifierExpression(i, e) ->
-            addIdentifierMapping i
-            scanExpression e
-        | FunctionCallExpression(_, args) ->
-            args |> List.iter scanExpression
-        | ArraySizeExpression(i) ->
-            addIdentifierMapping i
-        | LiteralExpression(l) -> ()
-        | ArrayAllocationExpression(_, e) ->
-            scanExpression e
 
     do program |> List.iter scanDeclaration
 
