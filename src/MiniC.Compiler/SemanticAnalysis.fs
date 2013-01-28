@@ -69,6 +69,7 @@ type FunctionTable(program) as self =
 type SymbolTable(program) as self =
     inherit Dictionary<IdentifierRef, VariableDeclaration>(HashIdentity.Reference)
 
+    let whileStatementStack = Stack<WhileStatement>()
     let symbolScopeStack = new SymbolScopeStack()
 
     let rec scanDeclaration =
@@ -103,10 +104,17 @@ type SymbolTable(program) as self =
             scanExpression e
             scanStatement s1
         | WhileStatement(e, s) ->
+            whileStatementStack.Push (e, s)
             scanExpression e
             scanStatement s
+            whileStatementStack.Pop() |> ignore
         | ReturnStatement(Some(e)) ->
             scanExpression e
+//        | ReturnStatement(None) ->
+//            
+        | BreakStatement ->
+            if whileStatementStack.Count = 0 then
+                raise (CompilerException "CS009 No enclosing loop out of which to break")
         | _ -> ()
 
     and addIdentifierMapping identifierRef =

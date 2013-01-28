@@ -40,7 +40,7 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
     let mutable localIndex = 0s
     let arrayAssignmentLocals = Dictionary<Ast.AssignmentExpression, int16>()
     let mutable labelIndex = 0
-    let mutable currentWhileStatementEndLabel = ILLabel()
+    let currentWhileStatementEndLabel = Stack<ILLabel>()
 
     let lookupILVariableScope identifierRef =
         let declaration = semanticAnalysisResult.SymbolTable.[identifierRef]
@@ -196,16 +196,18 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
             let startLabel = makeLabel()
             let conditionLabel = makeLabel()
             let endLabel = makeLabel()
-            currentWhileStatementEndLabel <- endLabel
-            List.concat [ [ Br conditionLabel ]
-                          [ Label startLabel ]
-                          processStatement s
-                          [ Label conditionLabel ]
-                          processExpression e
-                          [ Brtrue startLabel ]
-                          [ Label endLabel ] ]
+            currentWhileStatementEndLabel.Push endLabel
+            let result = List.concat [ [ Br conditionLabel ]
+                                       [ Label startLabel ]
+                                       processStatement s
+                                       [ Label conditionLabel ]
+                                       processExpression e
+                                       [ Brtrue startLabel ]
+                                       [ Label endLabel ] ]
+            currentWhileStatementEndLabel.Pop() |> ignore
+            result
         | Ast.ReturnStatement(x) -> processReturnStatement x
-        | Ast.BreakStatement -> [ Br currentWhileStatementEndLabel ]
+        | Ast.BreakStatement -> [ Br (currentWhileStatementEndLabel.Peek()) ]
 
     and processExpressionStatement =
         function
