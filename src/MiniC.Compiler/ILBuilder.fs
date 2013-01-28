@@ -135,7 +135,7 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
                           processExpression e2
                           [ Dup ]
                           [ Stloc arrayAssignmentLocals.[ae] ]
-                          [ Stelem (typeOf (semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec i)) ]
+                          [ Stelem (typeOf (semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec i).Type) ]
                           [ Ldloc arrayAssignmentLocals.[ae] ] ]
 
     and processUnaryExpression (operator, expression) =
@@ -154,7 +154,7 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
     and processArrayIdentifierExpression (identifierRef, expression) =
         List.concat [ processIdentifierLoad identifierRef
                       processExpression expression
-                      [ Ldelem (typeOf (semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec identifierRef)) ] ]
+                      [ Ldelem (typeOf (semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec identifierRef).Type) ] ]
 
     and processFunctionCallExpression (identifier, arguments) =
         List.concat [ arguments |> List.collect processExpression
@@ -212,7 +212,7 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
     and processExpressionStatement =
         function
         | Ast.Expression(x) ->
-            let isNotVoid = semanticAnalysisResult.ExpressionTypes.[x] <> Ast.Void 
+            let isNotVoid = semanticAnalysisResult.ExpressionTypes.[x].Type <> Ast.Void
             List.concat [ processExpression x
                           (if isNotVoid then [ Pop ] else []) ]
                 
@@ -260,7 +260,7 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
                 | Ast.ScalarAssignmentExpression(i, e) -> fromExpression e
                 | Ast.ArrayAssignmentExpression(i, e1, e2) as ae ->
                     let v = {
-                        ILVariable.Type = typeOf (semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec i); 
+                        ILVariable.Type = typeOf ((semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec i).Type); 
                         Name = "ArrayAssignmentTemp" + string localIndex;
                     }
                     arrayAssignmentLocals.Add(ae, localIndex);

@@ -1,0 +1,5 @@
+﻿void main(void) {
+	int i[];
+	int j[];
+	i[0] = j;
+}

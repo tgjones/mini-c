@@ -37,19 +37,26 @@ type private SymbolScopeStack() =
     member x.Pop() = stack.Pop() |> ignore
     member x.AddDeclaration declaration = stack.Peek().AddDeclaration declaration
 
-type VariableType = TypeSpec * bool
+type VariableType =
+    {
+        Type    : TypeSpec;
+        IsArray : bool;
+    }
+    override x.ToString() =
+        x.Type.ToString() + (if x.IsArray then "[]" else "")
+
+let scalarType t = { Type = t; IsArray = false; }
 
 type FunctionTableEntry =
     {
         ReturnType     : TypeSpec;
-        ParameterTypes : TypeSpec list;
+        ParameterTypes : VariableType list;
     }
 
 let typeOfDeclaration =
     function
-    | Ast.ScalarVariableDeclaration(t, _)
-    | Ast.ArrayVariableDeclaration(t, _) ->
-        t
+    | Ast.ScalarVariableDeclaration(t, _) -> { Type = t; IsArray = false }
+    | Ast.ArrayVariableDeclaration(t, _)  -> { Type = t; IsArray = true }
 
 type FunctionTable(program) as self =
     inherit Dictionary<Identifier, FunctionTableEntry>()
@@ -63,9 +70,9 @@ type FunctionTable(program) as self =
     do
         // First add built-in methods
         self.Add("iread",  { ReturnType = Int; ParameterTypes = []; })
-        self.Add("iprint", { ReturnType = Void; ParameterTypes = [ Int ]; })
+        self.Add("iprint", { ReturnType = Void; ParameterTypes = [ { Type = Int; IsArray = false } ]; })
         self.Add("fread",  { ReturnType = Float; ParameterTypes = []; })
-        self.Add("fprint", { ReturnType = Void; ParameterTypes = [ Float ]; })
+        self.Add("fprint", { ReturnType = Void; ParameterTypes = [ { Type = Float; IsArray = false } ]; })
         program |> List.iter scanDeclaration
 
 type SymbolTable(program) as self =
@@ -155,13 +162,10 @@ type SymbolTable(program) as self =
     do program |> List.iter scanDeclaration
 
     member x.GetIdentifierTypeSpec identifierRef =
-        let declaration = self.[identifierRef]
-        match declaration with
-        | ScalarVariableDeclaration(t, _)
-        | ArrayVariableDeclaration(t, _)  -> t
+        typeOfDeclaration self.[identifierRef]
 
 type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTable : SymbolTable) as self =
-    inherit Dictionary<Expression, TypeSpec>(HashIdentity.Reference)
+    inherit Dictionary<Expression, VariableType>(HashIdentity.Reference)
 
     let rec scanDeclaration =
         function
@@ -191,13 +195,13 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                 scanStatement s
             | ReturnStatement(Some(e)) ->
                 let typeOfE = scanExpression e
-                if typeOfE <> functionReturnType then raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (typeOfE.ToString()) (functionReturnType.ToString())))
+                if typeOfE <> scalarType functionReturnType then raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (typeOfE.ToString()) (functionReturnType.ToString())))
             | _ -> ()
 
         and scanExpression expression =
             let checkArrayIndexType e =
                 let arrayIndexType = scanExpression e
-                if arrayIndexType <> Int then
+                if arrayIndexType <> scalarType Int then
                     raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (arrayIndexType.ToString()) (Int.ToString())))
 
             let expressionType =
@@ -214,33 +218,37 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
 
                         let typeOfE2 = scanExpression e2
                         let typeOfI = symbolTable.GetIdentifierTypeSpec i
-                        if typeOfE2 <> typeOfI then raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (typeOfE2.ToString()) (typeOfI.ToString())))
 
-                        typeOfI
+                        if not typeOfI.IsArray then
+                            raise (CompilerException (sprintf "CS010 Cannot apply indexing with [] to an expression of type '%s'" (typeOfI.ToString())))
+
+                        if typeOfE2.IsArray then
+                            raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (typeOfE2.ToString()) (typeOfI.Type.ToString())))
+
+                        if typeOfE2.Type <> typeOfI.Type then raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (typeOfE2.ToString()) (typeOfI.Type.ToString())))
+
+                        scalarType typeOfI.Type
                 | BinaryExpression(e1, op, e2) ->
                     let typeOfE1 = scanExpression e1
                     let typeOfE2 = scanExpression e2
                     match op with
                     | ConditionalOr | ConditionalAnd ->
                         match typeOfE1, typeOfE2 with
-                        | Bool, Bool -> ()
+                        | { Type = Bool; IsArray = false; }, { Type = Bool; IsArray = false; } -> ()
                         | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
-                        Bool
+                        scalarType Bool
                     | Equal | NotEqual ->
                         match typeOfE1, typeOfE2 with
-                        | Int, Int
-                        | Float, Float
-                        | Bool, Bool ->
-                            ()
+                        | { Type = a; IsArray = false; }, { Type = b; IsArray = false; } when a = b && a <> Void -> ()
                         | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
-                        Bool
+                        scalarType Bool
                     | LessEqual | Less | GreaterEqual | Greater ->
                         match typeOfE1, typeOfE2 with
-                        | Int, Int
-                        | Float, Float ->
+                        | { Type = Int; IsArray = false; }, { Type = Int; IsArray = false; }
+                        | { Type = Float; IsArray = false; }, { Type = Float; IsArray = false; } ->
                             ()
                         | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
-                        Bool
+                        scalarType Bool
                     | Add | Subtract | Multiply | Divide | Modulus ->
                         typeOfE1 // TODO: Widen int to float
                 | UnaryExpression(_, e) ->
@@ -249,7 +257,7 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                     symbolTable.GetIdentifierTypeSpec i
                 | ArrayIdentifierExpression(i, e) ->
                     checkArrayIndexType e
-                    symbolTable.GetIdentifierTypeSpec i
+                    scalarType (symbolTable.GetIdentifierTypeSpec i).Type
                 | FunctionCallExpression(i, a) ->
                     if not (functionTable.ContainsKey i) then
                         raise (CompilerException(sprintf "CS006 The name '%s' does not exist in the current context" i))
@@ -261,17 +269,17 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                     let checkTypesMatch index l r =
                         if l <> r then raise (CompilerException (sprintf "CS007 Call to function '%s' has some invalid arguments. Argument %i: Cannot convert from '%s' to '%s'" i (index + 1) (l.ToString()) (r.ToString())))
                     List.iteri2 checkTypesMatch argumentTypes parameterTypes
-                    calledFunction.ReturnType
+                    scalarType calledFunction.ReturnType
                 | ArraySizeExpression(i) ->
-                    Ast.Int
+                    scalarType Int
                 | LiteralExpression(l) ->
                     match l with
-                    | BoolLiteral(b)  -> Ast.Bool
-                    | IntLiteral(i)   -> Ast.Int
-                    | FloatLiteral(f) -> Ast.Float
+                    | BoolLiteral(b)  -> scalarType Bool
+                    | IntLiteral(i)   -> scalarType Int
+                    | FloatLiteral(f) -> scalarType Float
                 | ArrayAllocationExpression(t, e) ->
                     checkArrayIndexType e
-                    t
+                    { Type = t; IsArray = true }
 
             self.Add(expression, expressionType)
 
