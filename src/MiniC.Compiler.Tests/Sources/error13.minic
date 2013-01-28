@@ -1,0 +1,4 @@
+﻿void main(void) {
+  foo = 1;
+  return;
+}

@@ -80,6 +80,8 @@ let ``can compile, save and execute application with I/O``() =
 [<TestCase("error9.minic", "CS006 The name 'foo' does not exist in the current context")>]
 [<TestCase("error10.minic", "CS004 Cannot convert type 'bool' to 'void'")>]
 [<TestCase("error11.minic", "CS007 Call to function 'test' has some invalid arguments. Argument 1: Cannot convert from 'int' to 'bool'")>]
+[<TestCase("error12.minic", "CS008 Function 'test' takes 1 arguments, but here was given 2")>]
+[<TestCase("error13.minic", "CS006 The name 'foo' does not exist in the current context")>]
 let ``can detect semantic errors`` sourceFile (compilerError : string) =
     let code = File.ReadAllText(Path.Combine("Sources", sourceFile))
     Assert.That(

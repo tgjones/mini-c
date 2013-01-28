@@ -25,7 +25,7 @@ type private SymbolScope(parent : SymbolScope option) =
         | None ->
             match parent with
             | Some(ss) -> ss.FindDeclaration identifierRef
-            | None -> failwithf "Could not find declaration of identifier %s" identifierRef.Identifier
+            | None -> raise (CompilerException(sprintf "CS006 The name '%s' does not exist in the current context" (identifierRef.Identifier)))
 
 type private SymbolScopeStack() =
     let stack = new Stack<SymbolScope>()

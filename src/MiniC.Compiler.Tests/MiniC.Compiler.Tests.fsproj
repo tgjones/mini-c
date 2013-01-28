@@ -37,12 +37,6 @@
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')" />
   <ItemGroup>
-    <None Include="packages.config" />
-    <Compile Include="ParserTests.fs" />
-    <Compile Include="SymbolTableTests.fs" />
-    <Compile Include="ILBuilderTests.fs" />
-    <Compile Include="CompilerTests.fs" />
-    <None Include="App.config" />
     <None Include="Sources\test1.minic">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -97,6 +91,18 @@
     <None Include="Sources\error11.minic">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Sources\error12.minic">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Sources\error13.minic">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="packages.config" />
+    <Compile Include="ParserTests.fs" />
+    <Compile Include="SymbolTableTests.fs" />
+    <Compile Include="ILBuilderTests.fs" />
+    <Compile Include="CompilerTests.fs" />
+    <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
