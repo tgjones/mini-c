@@ -37,20 +37,33 @@ type private SymbolScopeStack() =
     member x.Pop() = stack.Pop() |> ignore
     member x.AddDeclaration declaration = stack.Peek().AddDeclaration declaration
 
+type FunctionTableEntry =
+    {
+        ReturnType     : TypeSpec;
+        ParameterTypes : TypeSpec list;
+    }
+
+let typeOfDeclaration =
+    function
+    | Ast.ScalarVariableDeclaration(t, _)
+    | Ast.ArrayVariableDeclaration(t, _) ->
+        t
+
 type FunctionTable(program) as self =
-    inherit Dictionary<Identifier, TypeSpec>()
+    inherit Dictionary<Identifier, FunctionTableEntry>()
 
     let rec scanDeclaration =
         function
         | StaticVariableDeclaration(x)    -> ()
-        | FunctionDeclaration(t, i, _, _) -> self.Add(i, t)
+        | FunctionDeclaration(t, i, p, _) ->
+            self.Add(i, { ReturnType = t; ParameterTypes = List.map typeOfDeclaration p; })
 
     do
         // First add built-in methods
-        self.Add("iread", Int)
-        self.Add("iprint", Void)
-        self.Add("fread", Float)
-        self.Add("fprint", Void)
+        self.Add("iread",  { ReturnType = Int; ParameterTypes = []; })
+        self.Add("iprint", { ReturnType = Void; ParameterTypes = [ Int ]; })
+        self.Add("fread",  { ReturnType = Float; ParameterTypes = []; })
+        self.Add("fprint", { ReturnType = Void; ParameterTypes = [ Float ]; })
         program |> List.iter scanDeclaration
 
 type SymbolTable(program) as self =
@@ -219,10 +232,18 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                     symbolTable.GetIdentifierTypeSpec i
                 | ArrayIdentifierExpression(i, _) ->
                     symbolTable.GetIdentifierTypeSpec i
-                | FunctionCallExpression(i, _) ->
+                | FunctionCallExpression(i, a) ->
                     if not (functionTable.ContainsKey i) then
                         raise (CompilerException(sprintf "CS006 The name '%s' does not exist in the current context" i))
-                    functionTable.[i]
+                    let calledFunction = functionTable.[i]
+                    let parameterTypes = calledFunction.ParameterTypes
+                    if List.length a <> List.length parameterTypes then
+                        raise (CompilerException(sprintf "CS008 Function '%s' takes %i arguments, but here was given %i" i (List.length parameterTypes) (List.length a)))
+                    let argumentTypes = a |> List.map scanExpression
+                    let checkTypesMatch index l r =
+                        if l <> r then raise (CompilerException (sprintf "CS007 Call to function '%s' has some invalid arguments. Argument %i: Cannot convert from '%s' to '%s'" i (index + 1) (l.ToString()) (r.ToString())))
+                    List.iteri2 checkTypesMatch argumentTypes parameterTypes
+                    calledFunction.ReturnType
                 | ArraySizeExpression(i) ->
                     Ast.Int
                 | LiteralExpression(l) ->
