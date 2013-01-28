@@ -37,6 +37,8 @@ type private SymbolScopeStack() =
     member x.Pop() = stack.Pop() |> ignore
     member x.AddDeclaration declaration = stack.Peek().AddDeclaration declaration
 
+type VariableType = TypeSpec * bool
+
 type FunctionTableEntry =
     {
         ReturnType     : TypeSpec;
@@ -193,6 +195,11 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
             | _ -> ()
 
         and scanExpression expression =
+            let checkArrayIndexType e =
+                let arrayIndexType = scanExpression e
+                if arrayIndexType <> Int then
+                    raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (arrayIndexType.ToString()) (Int.ToString())))
+
             let expressionType =
                 match expression with
                 | AssignmentExpression(ae) as x ->
@@ -202,8 +209,14 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                         let typeOfI = symbolTable.GetIdentifierTypeSpec i
                         if typeOfE <> typeOfI then raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (typeOfE.ToString()) (typeOfI.ToString())))
                         typeOfI
-                    | ArrayAssignmentExpression(i, _, _) ->
-                        symbolTable.GetIdentifierTypeSpec i
+                    | ArrayAssignmentExpression(i, e1, e2) ->
+                        checkArrayIndexType e1
+
+                        let typeOfE2 = scanExpression e2
+                        let typeOfI = symbolTable.GetIdentifierTypeSpec i
+                        if typeOfE2 <> typeOfI then raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (typeOfE2.ToString()) (typeOfI.ToString())))
+
+                        typeOfI
                 | BinaryExpression(e1, op, e2) ->
                     let typeOfE1 = scanExpression e1
                     let typeOfE2 = scanExpression e2
@@ -234,7 +247,8 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                     scanExpression e
                 | IdentifierExpression(i) ->
                     symbolTable.GetIdentifierTypeSpec i
-                | ArrayIdentifierExpression(i, _) ->
+                | ArrayIdentifierExpression(i, e) ->
+                    checkArrayIndexType e
                     symbolTable.GetIdentifierTypeSpec i
                 | FunctionCallExpression(i, a) ->
                     if not (functionTable.ContainsKey i) then
@@ -255,7 +269,8 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                     | BoolLiteral(b)  -> Ast.Bool
                     | IntLiteral(i)   -> Ast.Int
                     | FloatLiteral(f) -> Ast.Float
-                | ArrayAllocationExpression(t, _) ->
+                | ArrayAllocationExpression(t, e) ->
+                    checkArrayIndexType e
                     t
 
             self.Add(expression, expressionType)

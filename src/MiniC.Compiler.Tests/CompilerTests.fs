@@ -86,6 +86,10 @@ let ``can compile, save and execute application with I/O``() =
 [<TestCase("error15.minic", "CS004 Cannot convert type 'void' to 'int'")>]
 [<TestCase("error16.minic", "CS004 Cannot convert type 'bool' to 'int'")>]
 [<TestCase("error17.minic", "CS004 Cannot convert type 'float' to 'int'")>]
+[<TestCase("error18.minic", "CS004 Cannot convert type 'bool' to 'int'")>]
+[<TestCase("error19.minic", "CS004 Cannot convert type 'bool' to 'int[]'")>]
+[<TestCase("error20.minic", "CS004 Cannot convert type 'bool' to 'int'")>]
+[<TestCase("error21.minic", "CS004 Cannot convert type 'int' to 'int[]'")>]
 let ``can detect semantic errors`` sourceFile (compilerError : string) =
     let code = File.ReadAllText(Path.Combine("Sources", sourceFile))
     Assert.That(
