@@ -1,6 +1,7 @@
 ﻿module MiniC.Compiler.SemanticAnalysis
 
 open System.Collections.Generic
+open CompilerErrors
 open Ast
 
 type private SymbolScope(parent : SymbolScope option) =
@@ -15,7 +16,7 @@ type private SymbolScope(parent : SymbolScope option) =
 
     member x.AddDeclaration declaration =
         if List.exists (fun x -> identifierFromDeclaration x = identifierFromDeclaration declaration) list then
-            raise (CompilerException(sprintf "CS003 A variable named '%s' is already defined in this scope" (identifierFromDeclaration declaration)))
+            raise (variableAlreadyDefined (identifierFromDeclaration declaration))
         list <- declaration :: list
 
     member x.FindDeclaration identifierRef =
@@ -25,7 +26,7 @@ type private SymbolScope(parent : SymbolScope option) =
         | None ->
             match parent with
             | Some(ss) -> ss.FindDeclaration identifierRef
-            | None -> raise (CompilerException(sprintf "CS006 The name '%s' does not exist in the current context" (identifierRef.Identifier)))
+            | None -> raise (nameDoesNotExist (identifierRef.Identifier))
 
 type private SymbolScopeStack() =
     let stack = new Stack<SymbolScope>()
@@ -116,10 +117,10 @@ type SymbolTable(program) as self =
                 scanExpression e
             | ReturnStatement(None) ->
                 if functionReturnType <> Void then
-                    raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (Void.ToString()) (functionReturnType.ToString())))
+                    raise (cannotConvertType (Void.ToString()) (functionReturnType.ToString()))
             | BreakStatement ->
                 if whileStatementStack.Count = 0 then
-                    raise (CompilerException "CS009 No enclosing loop out of which to break")
+                    raise (noEnclosingLoop())
 
         and addIdentifierMapping identifierRef =
             let declaration = symbolScopeStack.CurrentScope.FindDeclaration identifierRef
@@ -195,14 +196,14 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                 scanStatement s
             | ReturnStatement(Some(e)) ->
                 let typeOfE = scanExpression e
-                if typeOfE <> scalarType functionReturnType then raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (typeOfE.ToString()) (functionReturnType.ToString())))
+                if typeOfE <> scalarType functionReturnType then raise (cannotConvertType (typeOfE.ToString()) (functionReturnType.ToString()))
             | _ -> ()
 
         and scanExpression expression =
             let checkArrayIndexType e =
                 let arrayIndexType = scanExpression e
                 if arrayIndexType <> scalarType Int then
-                    raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (arrayIndexType.ToString()) (Int.ToString())))
+                    raise (cannotConvertType (arrayIndexType.ToString()) (Int.ToString()))
 
             let expressionType =
                 match expression with
@@ -211,7 +212,7 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                     | ScalarAssignmentExpression(i, e) ->
                         let typeOfE = scanExpression e
                         let typeOfI = symbolTable.GetIdentifierTypeSpec i
-                        if typeOfE <> typeOfI then raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (typeOfE.ToString()) (typeOfI.ToString())))
+                        if typeOfE <> typeOfI then raise (cannotConvertType (typeOfE.ToString()) (typeOfI.ToString()))
                         typeOfI
                     | ArrayAssignmentExpression(i, e1, e2) ->
                         checkArrayIndexType e1
@@ -220,12 +221,12 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                         let typeOfI = symbolTable.GetIdentifierTypeSpec i
 
                         if not typeOfI.IsArray then
-                            raise (CompilerException (sprintf "CS010 Cannot apply indexing with [] to an expression of type '%s'" (typeOfI.ToString())))
+                            raise (cannotApplyIndexing (typeOfI.ToString()))
 
                         if typeOfE2.IsArray then
-                            raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (typeOfE2.ToString()) (typeOfI.Type.ToString())))
+                            raise (cannotConvertType (typeOfE2.ToString()) (typeOfI.Type.ToString()))
 
-                        if typeOfE2.Type <> typeOfI.Type then raise (CompilerException (sprintf "CS004 Cannot convert type '%s' to '%s'" (typeOfE2.ToString()) (typeOfI.Type.ToString())))
+                        if typeOfE2.Type <> typeOfI.Type then raise (cannotConvertType (typeOfE2.ToString()) (typeOfI.Type.ToString()))
 
                         scalarType typeOfI.Type
                 | BinaryExpression(e1, op, e2) ->
@@ -235,22 +236,22 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                     | ConditionalOr | ConditionalAnd ->
                         match typeOfE1, typeOfE2 with
                         | { Type = Bool; IsArray = false; }, { Type = Bool; IsArray = false; } -> ()
-                        | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
+                        | _ -> raise (operatorCannotBeApplied (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString()))
                         scalarType Bool
                     | Equal | NotEqual ->
                         match typeOfE1, typeOfE2 with
                         | { Type = a; IsArray = false; }, { Type = b; IsArray = false; } when a = b && a <> Void -> ()
-                        | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
+                        | _ -> raise (operatorCannotBeApplied (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString()))
                         scalarType Bool
                     | LessEqual | Less | GreaterEqual | Greater ->
                         match typeOfE1, typeOfE2 with
                         | { Type = Int; IsArray = false; }, { Type = Int; IsArray = false; }
                         | { Type = Float; IsArray = false; }, { Type = Float; IsArray = false; } ->
                             ()
-                        | _ -> raise (CompilerException (sprintf "CS005 Operator '%s' cannot be applied to operands of type '%s' and '%s'" (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString())))
+                        | _ -> raise (operatorCannotBeApplied (op.ToString()) (typeOfE1.ToString()) (typeOfE2.ToString()))
                         scalarType Bool
                     | Add | Subtract | Multiply | Divide | Modulus ->
-                        typeOfE1 // TODO: Widen int to float
+                        typeOfE1
                 | UnaryExpression(_, e) ->
                     scanExpression e
                 | IdentifierExpression(i) ->
@@ -260,14 +261,14 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                     scalarType (symbolTable.GetIdentifierTypeSpec i).Type
                 | FunctionCallExpression(i, a) ->
                     if not (functionTable.ContainsKey i) then
-                        raise (CompilerException(sprintf "CS006 The name '%s' does not exist in the current context" i))
+                        raise (nameDoesNotExist i)
                     let calledFunction = functionTable.[i]
                     let parameterTypes = calledFunction.ParameterTypes
                     if List.length a <> List.length parameterTypes then
-                        raise (CompilerException(sprintf "CS008 Function '%s' takes %i arguments, but here was given %i" i (List.length parameterTypes) (List.length a)))
+                        raise (wrongNumberOfArguments i (List.length parameterTypes) (List.length a))
                     let argumentTypes = a |> List.map scanExpression
                     let checkTypesMatch index l r =
-                        if l <> r then raise (CompilerException (sprintf "CS007 Call to function '%s' has some invalid arguments. Argument %i: Cannot convert from '%s' to '%s'" i (index + 1) (l.ToString()) (r.ToString())))
+                        if l <> r then raise (invalidArguments i (index + 1) (l.ToString()) (r.ToString()))
                     List.iteri2 checkTypesMatch argumentTypes parameterTypes
                     scalarType calledFunction.ReturnType
                 | ArraySizeExpression(i) ->

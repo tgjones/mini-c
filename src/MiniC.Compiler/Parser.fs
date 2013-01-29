@@ -1,6 +1,7 @@
 ﻿module MiniC.Compiler.Parser
 
 open Piglet.Parser
+open CompilerErrors
 open Ast
 open ParsingUtilities
 
@@ -260,6 +261,6 @@ let parse (s : string) =
         parser.Parse(s) :?> Program
     with
         | :? Piglet.Lexer.LexerException as ex ->
-            raise (CompilerException ("CS001 Lexer error: " + ex.Message))
+            raise (lexerError ex.Message)
         | :? Piglet.Parser.ParseException as ex ->
-            raise (CompilerException ("CS002 Parser error: " + ex.Message))
+            raise (parserError ex.Message)
