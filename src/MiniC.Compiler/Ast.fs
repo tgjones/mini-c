@@ -51,7 +51,8 @@ and IfStatement = Expression * Statement * Statement option
 and WhileStatement = Expression * Statement
 
 and Expression =
-    | AssignmentExpression of AssignmentExpression
+    | ScalarAssignmentExpression of IdentifierRef * Expression
+    | ArrayAssignmentExpression of IdentifierRef * Expression * Expression
     | BinaryExpression of Expression * BinaryOperator * Expression
     | UnaryExpression of UnaryOperator * Expression
     | IdentifierExpression of IdentifierRef
@@ -60,10 +61,6 @@ and Expression =
     | ArraySizeExpression of IdentifierRef
     | LiteralExpression of Literal
     | ArrayAllocationExpression of TypeSpec * Expression
-
-and AssignmentExpression =
-    | ScalarAssignmentExpression of IdentifierRef * Expression
-    | ArrayAssignmentExpression of IdentifierRef * Expression * Expression
 
 and BinaryOperator =
     | ConditionalOr

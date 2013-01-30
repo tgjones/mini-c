@@ -199,9 +199,9 @@ returnStatement.AddProduction(returnKeyword, semicolon)            .SetReduceFun
 breakStatement.AddProduction(breakKeyword, semicolon).SetReduceFunction (fun _ _ -> ())
 
 expression.AddProduction(identifier, singleEquals, expression)
-    .SetReduceFunction (fun a _ c -> Ast.AssignmentExpression(Ast.ScalarAssignmentExpression({ Identifier = a }, c)))
+    .SetReduceFunction (fun a _ c -> Ast.ScalarAssignmentExpression({ Identifier = a }, c))
 expression.AddProduction(identifier, openSquare, expression, closeSquare, singleEquals, expression)
-    .SetReduceFunction (fun a _ c _ _ f -> Ast.AssignmentExpression(Ast.ArrayAssignmentExpression({ Identifier = a }, c, f)))
+    .SetReduceFunction (fun a _ c _ _ f -> Ast.ArrayAssignmentExpression({ Identifier = a }, c, f))
 
 expression.AddProduction(expression, doublePipes, expression).SetReduceFunction (fun a _ c -> Ast.BinaryExpression(a, Ast.ConditionalOr, c))
 expression.AddProduction(expression, doubleEquals, expression).SetReduceFunction (fun a _ c -> Ast.BinaryExpression(a, Ast.Equal, c))

@@ -38,7 +38,7 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
                      variableMappings : VariableMappingDictionary) =
     let mutable argumentIndex = 0s
     let mutable localIndex = 0s
-    let arrayAssignmentLocals = Dictionary<Ast.AssignmentExpression, int16>()
+    let arrayAssignmentLocals = Dictionary<Ast.Expression, int16>()
     let mutable labelIndex = 0
     let currentWhileStatementEndLabel = Stack<ILLabel>()
 
@@ -111,21 +111,7 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
 
     and processExpression expression =
         match expression with
-        | Ast.AssignmentExpression(x) -> processAssignmentExpression expression x
-        | Ast.BinaryExpression(a, b, c) -> processBinaryExpression (a, b, c)
-        | Ast.UnaryExpression(a, b) -> processUnaryExpression (a, b)
-        | Ast.IdentifierExpression(i) -> processIdentifierExpression i
-        | Ast.ArrayIdentifierExpression(i, e) -> processArrayIdentifierExpression (i, e)
-        | Ast.FunctionCallExpression(i, a) -> processFunctionCallExpression (i, a)
-        | Ast.ArraySizeExpression(i) -> processArraySizeExpression i
-        | Ast.LiteralExpression(x) -> processLiteralExpression x
-        | Ast.ArrayAllocationExpression(t, e) ->
-            List.concat [ processExpression e
-                          [ Newarr (typeOf t) ] ]
-
-    and processAssignmentExpression expression =
-        function
-        | Ast.ScalarAssignmentExpression(i, e) as ae ->
+        | Ast.ScalarAssignmentExpression(i, e) ->
             List.concat [ processExpression e
                           [ Dup ]
                           processIdentifierStore i ]
@@ -137,6 +123,16 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
                           [ Stloc arrayAssignmentLocals.[ae] ]
                           [ Stelem (typeOf (semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec i).Type) ]
                           [ Ldloc arrayAssignmentLocals.[ae] ] ]
+        | Ast.BinaryExpression(a, b, c) -> processBinaryExpression (a, b, c)
+        | Ast.UnaryExpression(a, b) -> processUnaryExpression (a, b)
+        | Ast.IdentifierExpression(i) -> processIdentifierExpression i
+        | Ast.ArrayIdentifierExpression(i, e) -> processArrayIdentifierExpression (i, e)
+        | Ast.FunctionCallExpression(i, a) -> processFunctionCallExpression (i, a)
+        | Ast.ArraySizeExpression(i) -> processArraySizeExpression i
+        | Ast.LiteralExpression(x) -> processLiteralExpression x
+        | Ast.ArrayAllocationExpression(t, e) ->
+            List.concat [ processExpression e
+                          [ Newarr (typeOf t) ] ]
 
     and processUnaryExpression (operator, expression) =
         List.concat [ processExpression expression
@@ -255,17 +251,15 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
 
         and fromExpression =
             function
-            | Ast.AssignmentExpression(ae) ->
-                match ae with
-                | Ast.ScalarAssignmentExpression(i, e) -> fromExpression e
-                | Ast.ArrayAssignmentExpression(i, e1, e2) as ae ->
-                    let v = {
-                        ILVariable.Type = typeOf ((semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec i).Type); 
-                        Name = "ArrayAssignmentTemp" + string localIndex;
-                    }
-                    arrayAssignmentLocals.Add(ae, localIndex);
-                    localIndex <- localIndex + 1s
-                    List.concat [ [ v ]; fromExpression e2 ]
+            | Ast.ScalarAssignmentExpression(i, e) -> fromExpression e
+            | Ast.ArrayAssignmentExpression(i, e1, e2) as ae ->
+                let v = {
+                    ILVariable.Type = typeOf ((semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec i).Type); 
+                    Name = "ArrayAssignmentTemp" + string localIndex;
+                }
+                arrayAssignmentLocals.Add(ae, localIndex);
+                localIndex <- localIndex + 1s
+                List.concat [ [ v ]; fromExpression e2 ]
             | Ast.BinaryExpression(l, op, r)      -> List.concat [ fromExpression l; fromExpression r; ]
             | Ast.UnaryExpression(op, e)          -> fromExpression e
             | Ast.ArrayIdentifierExpression(i, e) -> fromExpression e

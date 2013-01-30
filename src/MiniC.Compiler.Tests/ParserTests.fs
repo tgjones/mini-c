@@ -452,40 +452,34 @@ let ``can parse assignment expressions``() =
                 [
                     Ast.ExpressionStatement(
                         Ast.Expression(
-                            Ast.AssignmentExpression(
-                                Ast.ScalarAssignmentExpression(
-                                    { Identifier = "i" },
-                                    Ast.BinaryExpression(
-                                        Ast.IdentifierExpression { Identifier = "i" },
-                                        Ast.Add,
-                                        Ast.LiteralExpression(Ast.IntLiteral(1))
-                                    )
+                            Ast.ScalarAssignmentExpression(
+                                { Identifier = "i" },
+                                Ast.BinaryExpression(
+                                    Ast.IdentifierExpression { Identifier = "i" },
+                                    Ast.Add,
+                                    Ast.LiteralExpression(Ast.IntLiteral(1))
                                 )
                             )
                         )
                     )
                     Ast.ExpressionStatement(
                         Ast.Expression(
-                            Ast.AssignmentExpression(
-                                Ast.ArrayAssignmentExpression(
-                                    { Identifier = "j" },
-                                    Ast.BinaryExpression(
-                                        Ast.IdentifierExpression { Identifier = "i" },
-                                        Ast.Modulus,
-                                        Ast.LiteralExpression(Ast.IntLiteral 2)
-                                    ),
-                                    Ast.IdentifierExpression { Identifier = "i" }
-                                )
+                            Ast.ArrayAssignmentExpression(
+                                { Identifier = "j" },
+                                Ast.BinaryExpression(
+                                    Ast.IdentifierExpression { Identifier = "i" },
+                                    Ast.Modulus,
+                                    Ast.LiteralExpression(Ast.IntLiteral 2)
+                                ),
+                                Ast.IdentifierExpression { Identifier = "i" }
                             )
                         )
                     )
                     Ast.ExpressionStatement(
                         Ast.Expression(
-                            Ast.AssignmentExpression(
-                                Ast.ScalarAssignmentExpression(
-                                    { Identifier = "k" },
-                                    Ast.LiteralExpression(Ast.FloatLiteral(1.25))
-                                )
+                            Ast.ScalarAssignmentExpression(
+                                { Identifier = "k" },
+                                Ast.LiteralExpression(Ast.FloatLiteral(1.25))
                             )
                         )
                     )
@@ -515,19 +509,17 @@ let ``can parse array expressions``() =
                 [
                     Ast.ExpressionStatement(
                         Ast.Expression(
-                            Ast.AssignmentExpression(
-                                Ast.ScalarAssignmentExpression(
-                                    { Identifier = "i" },
-                                    Ast.ArrayIdentifierExpression(
-                                        { Identifier = "j" },
+                            Ast.ScalarAssignmentExpression(
+                                { Identifier = "i" },
+                                Ast.ArrayIdentifierExpression(
+                                    { Identifier = "j" },
+                                    Ast.BinaryExpression(
+                                        Ast.IdentifierExpression { Identifier = "i" },
+                                        Ast.Multiply,
                                         Ast.BinaryExpression(
-                                            Ast.IdentifierExpression { Identifier = "i" },
-                                            Ast.Multiply,
-                                            Ast.BinaryExpression(
-                                                Ast.LiteralExpression(Ast.IntLiteral 1),
-                                                Ast.Add,
-                                                Ast.LiteralExpression(Ast.IntLiteral 2)
-                                            )
+                                            Ast.LiteralExpression(Ast.IntLiteral 1),
+                                            Ast.Add,
+                                            Ast.LiteralExpression(Ast.IntLiteral 2)
                                         )
                                     )
                                 )
@@ -536,26 +528,22 @@ let ``can parse array expressions``() =
                     )
                     Ast.ExpressionStatement(
                         Ast.Expression(
-                            Ast.AssignmentExpression(
-                                Ast.ScalarAssignmentExpression(
-                                    { Identifier = "i" },
-                                    Ast.ArraySizeExpression { Identifier = "j" }
-                                )
+                            Ast.ScalarAssignmentExpression(
+                                { Identifier = "i" },
+                                Ast.ArraySizeExpression { Identifier = "j" }
                             )
                         )
                     )
                     Ast.ExpressionStatement(
                         Ast.Expression(
-                            Ast.AssignmentExpression(
-                                Ast.ScalarAssignmentExpression(
-                                    { Identifier = "j" },
-                                    Ast.ArrayAllocationExpression(
-                                        Ast.Int,
-                                        Ast.BinaryExpression(
-                                            Ast.ArraySizeExpression { Identifier = "j" },
-                                            Ast.Multiply,
-                                            Ast.LiteralExpression(Ast.IntLiteral 2)
-                                        )
+                            Ast.ScalarAssignmentExpression(
+                                { Identifier = "j" },
+                                Ast.ArrayAllocationExpression(
+                                    Ast.Int,
+                                    Ast.BinaryExpression(
+                                        Ast.ArraySizeExpression { Identifier = "j" },
+                                        Ast.Multiply,
+                                        Ast.LiteralExpression(Ast.IntLiteral 2)
                                     )
                                 )
                             )
@@ -643,22 +631,20 @@ let ``can parse operator precedence``() =
                         Ast.BinaryExpression(
                             Ast.IdentifierExpression { Identifier = "guess" },
                             Ast.Equal,
-                            Ast.AssignmentExpression(
-                                Ast.ScalarAssignmentExpression(
-                                    { Identifier = "x" },
+                            Ast.ScalarAssignmentExpression(
+                                { Identifier = "x" },
+                                Ast.BinaryExpression(
                                     Ast.BinaryExpression(
+                                        Ast.IdentifierExpression { Identifier = "guess" },
+                                        Ast.Add,
                                         Ast.BinaryExpression(
-                                            Ast.IdentifierExpression { Identifier = "guess" },
-                                            Ast.Add,
-                                            Ast.BinaryExpression(
-                                                Ast.IdentifierExpression { Identifier = "a" },
-                                                Ast.Divide,
-                                                Ast.IdentifierExpression { Identifier = "guess" }
-                                            )
-                                        ),
-                                        Ast.Divide,
-                                        Ast.LiteralExpression(Ast.IntLiteral 2)
-                                    )
+                                            Ast.IdentifierExpression { Identifier = "a" },
+                                            Ast.Divide,
+                                            Ast.IdentifierExpression { Identifier = "guess" }
+                                        )
+                                    ),
+                                    Ast.Divide,
+                                    Ast.LiteralExpression(Ast.IntLiteral 2)
                                 )
                             )
                         ),

@@ -130,15 +130,13 @@ type SymbolTable(program) as self =
 
         and scanExpression =
             function
-            | AssignmentExpression(ae) ->
-                match ae with
-                | ScalarAssignmentExpression(i, e) ->
-                    addIdentifierMapping i
-                    scanExpression e
-                | ArrayAssignmentExpression(i, e1, e2) ->
-                    addIdentifierMapping i
-                    scanExpression e1
-                    scanExpression e2
+            | ScalarAssignmentExpression(i, e) ->
+                addIdentifierMapping i
+                scanExpression e
+            | ArrayAssignmentExpression(i, e1, e2) ->
+                addIdentifierMapping i
+                scanExpression e1
+                scanExpression e2
             | BinaryExpression(e1, _, e2) ->
                 scanExpression e1
                 scanExpression e2
@@ -209,28 +207,26 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
 
             let expressionType =
                 match expression with
-                | AssignmentExpression(ae) as x ->
-                    match ae with
-                    | ScalarAssignmentExpression(i, e) ->
-                        let typeOfE = scanExpression e
-                        let typeOfI = symbolTable.GetIdentifierTypeSpec i
-                        if typeOfE <> typeOfI then raise (cannotConvertType (typeOfE.ToString()) (typeOfI.ToString()))
-                        typeOfI
-                    | ArrayAssignmentExpression(i, e1, e2) ->
-                        checkArrayIndexType e1
+                | ScalarAssignmentExpression(i, e) ->
+                    let typeOfE = scanExpression e
+                    let typeOfI = symbolTable.GetIdentifierTypeSpec i
+                    if typeOfE <> typeOfI then raise (cannotConvertType (typeOfE.ToString()) (typeOfI.ToString()))
+                    typeOfI
+                | ArrayAssignmentExpression(i, e1, e2) ->
+                    checkArrayIndexType e1
 
-                        let typeOfE2 = scanExpression e2
-                        let typeOfI = symbolTable.GetIdentifierTypeSpec i
+                    let typeOfE2 = scanExpression e2
+                    let typeOfI = symbolTable.GetIdentifierTypeSpec i
 
-                        if not typeOfI.IsArray then
-                            raise (cannotApplyIndexing (typeOfI.ToString()))
+                    if not typeOfI.IsArray then
+                        raise (cannotApplyIndexing (typeOfI.ToString()))
 
-                        if typeOfE2.IsArray then
-                            raise (cannotConvertType (typeOfE2.ToString()) (typeOfI.Type.ToString()))
+                    if typeOfE2.IsArray then
+                        raise (cannotConvertType (typeOfE2.ToString()) (typeOfI.Type.ToString()))
 
-                        if typeOfE2.Type <> typeOfI.Type then raise (cannotConvertType (typeOfE2.ToString()) (typeOfI.Type.ToString()))
+                    if typeOfE2.Type <> typeOfI.Type then raise (cannotConvertType (typeOfE2.ToString()) (typeOfI.Type.ToString()))
 
-                        scalarType typeOfI.Type
+                    scalarType typeOfI.Type
                 | BinaryExpression(e1, op, e2) ->
                     let typeOfE1 = scanExpression e1
                     let typeOfE2 = scanExpression e2

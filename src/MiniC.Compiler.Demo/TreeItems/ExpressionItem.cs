@@ -30,30 +30,26 @@ namespace MiniC.Compiler.Demo.TreeItems
 				var typedExpression = (Ast.Expression.ArraySizeExpression) expression;
 				Text = "Array Size Expression: " + typedExpression.Item.Identifier;
 			}
-			else if (expression.IsAssignmentExpression)
+			else if (expression.IsScalarAssignmentExpression)
 			{
-				var typedExpression = (Ast.Expression.AssignmentExpression) expression;
-				if (typedExpression.Item.IsScalarAssignmentExpression)
+				var typedExpression = (Ast.Expression.ScalarAssignmentExpression) expression;
+				Text = "Scalar Assignment Expression";
+				Children = new TreeItemBase[]
 				{
-					var typedExpression2 = (Ast.AssignmentExpression.ScalarAssignmentExpression) typedExpression.Item;
-					Text = "Scalar Assignment Expression";
-					Children = new TreeItemBase[]
-					{
-						new SimpleItem("Variable: " + typedExpression2.Item1.Identifier),
-						new SimpleItem("Expression", new[] { new ExpressionItem(typedExpression2.Item2) })
-					};
-				}
-				if (typedExpression.Item.IsArrayAssignmentExpression)
+					new SimpleItem("Variable: " + typedExpression.Item1.Identifier),
+					new SimpleItem("Expression", new[] { new ExpressionItem(typedExpression.Item2) })
+				};
+			}
+			else if (expression.IsArrayAssignmentExpression)
+			{
+				var typedExpression = (Ast.Expression.ArrayAssignmentExpression) expression;
+				Text = "Array Assignment Expression";
+				Children = new TreeItemBase[]
 				{
-					var typedExpression2 = (Ast.AssignmentExpression.ArrayAssignmentExpression) typedExpression.Item;
-					Text = "Array Assignment Expression";
-					Children = new TreeItemBase[]
-					{
-						new SimpleItem("Variable: " + typedExpression2.Item1.Identifier),
-						new SimpleItem("Index", new[] { new ExpressionItem(typedExpression2.Item2) }),
-						new SimpleItem("Expression", new[] { new ExpressionItem(typedExpression2.Item3) })
-					};
-				}
+					new SimpleItem("Variable: " + typedExpression.Item1.Identifier),
+					new SimpleItem("Index", new[] { new ExpressionItem(typedExpression.Item2) }),
+					new SimpleItem("Expression", new[] { new ExpressionItem(typedExpression.Item3) })
+				};
 			}
 			else if (expression.IsBinaryExpression)
 			{
