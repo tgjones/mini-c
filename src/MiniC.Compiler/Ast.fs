@@ -106,3 +106,8 @@ and Literal =
     | BoolLiteral of bool
     | IntLiteral of int
     | FloatLiteral of float
+    override x.ToString() =
+        match x with
+        | BoolLiteral(b)  -> b.ToString()
+        | IntLiteral(i)   -> i.ToString()
+        | FloatLiteral(f) -> f.ToString()

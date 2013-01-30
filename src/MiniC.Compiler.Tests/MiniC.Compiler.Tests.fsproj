@@ -127,6 +127,12 @@
     <None Include="Sources\error23.minic">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Sources\error24.minic">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Sources\error25.minic">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
     <Compile Include="ParserTests.fs" />
     <Compile Include="SymbolTableTests.fs" />

@@ -10,6 +10,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\docs\Grammar.txt = ..\docs\Grammar.txt
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniC.Compiler.Demo", "MiniC.Compiler.Demo\MiniC.Compiler.Demo.csproj", "{BAE211A9-744C-42C9-A70E-3A16505034CF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,6 +26,10 @@ Global
 		{ADA721D1-B2FB-4C8C-A435-8D6649A050F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ADA721D1-B2FB-4C8C-A435-8D6649A050F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ADA721D1-B2FB-4C8C-A435-8D6649A050F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BAE211A9-744C-42C9-A70E-3A16505034CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAE211A9-744C-42C9-A70E-3A16505034CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAE211A9-744C-42C9-A70E-3A16505034CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAE211A9-744C-42C9-A70E-3A16505034CF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

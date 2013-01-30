@@ -1,0 +1,87 @@
+﻿<mahapps:MetroWindow x:Class="MiniC.Compiler.Demo.MainWindow"
+					 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+					 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+					 xmlns:mahapps="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+                     xmlns:local="clr-namespace:MiniC.Compiler.Demo"
+                     xmlns:compiler="clr-namespace:MiniC.Compiler;assembly=MiniC.Compiler"
+					 xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
+                     xmlns:treeItems="clr-namespace:MiniC.Compiler.Demo.TreeItems"
+                     Title="Mini-C Compiler Demo" 
+					 Height="800" Width="1000">
+	<Window.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Colours.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/Blue.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/BaseLight.xaml" />
+			</ResourceDictionary.MergedDictionaries>
+			<Style TargetType="TreeViewItem">
+				<Setter Property="IsExpanded" Value="True" />
+			</Style>
+			<Style TargetType="Label" x:Key="HeaderStyle">
+				<Setter Property="Margin" Value="5,5,0,0" />
+				<Setter Property="FontFamily" Value="Segoe UI Light, Lucida Sans Unicode, Verdana" />
+				<Setter Property="FontSize" Value="27" />
+				<Setter Property="Foreground">
+					<Setter.Value>
+						<SolidColorBrush Color="{DynamicResource AccentColor}" />
+					</Setter.Value>
+				</Setter>
+			</Style>
+			<Style TargetType="Label" x:Key="HeaderStyleFaded" BasedOn="{StaticResource HeaderStyle}">
+				<Setter Property="Foreground">
+					<Setter.Value>
+						<SolidColorBrush Color="{DynamicResource GrayNormal}" />
+					</Setter.Value>
+				</Setter>
+			</Style>
+		</ResourceDictionary>
+	</Window.Resources>
+	<Window.DataContext>
+		<local:MainWindowViewModel />
+	</Window.DataContext>
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*" />
+			<ColumnDefinition Width="*" />
+			<ColumnDefinition Width="*" />
+		</Grid.ColumnDefinitions>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="50" />
+			<RowDefinition Height="*" />
+			<RowDefinition Height="50" />
+			<RowDefinition Height="150" />
+		</Grid.RowDefinitions>
+		<Label Grid.Column="0" Grid.Row="0" Style="{StaticResource HeaderStyle}">Source Code</Label>
+		<Border Grid.Column="0" Grid.Row="1" Margin="10" BorderBrush="LightGray" BorderThickness="1" Padding="5">
+			<avalonEdit:TextEditor x:Name="TextEditor" TextChanged="TextEditor_OnTextChanged"
+								   FontFamily="Consolas" SyntaxHighlighting="C++"
+								   ShowLineNumbers="True" />
+		</Border>
+		<Label Grid.Column="1" Grid.Row="0" Style="{StaticResource HeaderStyle}">Abstract Syntax Tree</Label>
+		<TreeView Grid.Column="1" Grid.Row="1" ItemsSource="{Binding AbstractSyntaxTree}"
+				  Margin="10" BorderBrush="LightGray" BorderThickness="1">
+			<TreeView.Resources>
+				<HierarchicalDataTemplate DataType="{x:Type treeItems:TreeItemBase}"
+										  ItemsSource="{Binding Children}">
+					<TextBlock Text="{Binding Text}" />
+				</HierarchicalDataTemplate>
+			</TreeView.Resources>
+		</TreeView>
+		<Label Grid.Column="2" Grid.Row="0" Style="{StaticResource HeaderStyle}">Intermediate Language</Label>
+		<TreeView Grid.Column="2" Grid.Row="1" ItemsSource="{Binding IntermediateLanguage.Methods}"
+				  Margin="10" BorderBrush="LightGray" BorderThickness="1">
+			<TreeView.Resources>
+				<HierarchicalDataTemplate DataType="{x:Type compiler:IL+ILMethod}"
+										  ItemsSource="{Binding Body}">
+					<TextBlock Text="{Binding Name}" />
+				</HierarchicalDataTemplate>
+			</TreeView.Resources>
+		</TreeView>
+		<Label Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="2" Style="{StaticResource HeaderStyleFaded}">Compiler Errors</Label>
+		<TextBox Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="3" Text="{Binding CompilerErrors, Mode=OneWay}"
+				 Margin="10" BorderBrush="LightGray" BorderThickness="1" IsReadOnly="True" />
+	</Grid>
+</mahapps:MetroWindow>

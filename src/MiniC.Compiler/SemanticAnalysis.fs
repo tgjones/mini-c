@@ -66,6 +66,8 @@ type FunctionTable(program) as self =
         function
         | StaticVariableDeclaration(x)    -> ()
         | FunctionDeclaration(t, i, p, _) ->
+            if self.ContainsKey i then
+                raise (functionAlreadyDefined i)
             self.Add(i, { ReturnType = t; ParameterTypes = List.map typeOfDeclaration p; })
 
     do
@@ -299,6 +301,10 @@ type SemanticAnalysisResult =
 let analyze program =
     let symbolTable   = new SymbolTable(program)
     let functionTable = new FunctionTable(program)
+
+    if not (functionTable.ContainsKey "main") then
+        raise (missingEntryPoint())
+
     let expressionTypes = new ExpressionTypeDictionary(program, functionTable, symbolTable)
 
     {

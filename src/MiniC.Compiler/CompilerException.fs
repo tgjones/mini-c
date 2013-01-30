@@ -16,3 +16,5 @@ module CompilerErrors =
     let wrongNumberOfArguments a b c  = create (sprintf "MC008 Function '%s' takes %i arguments, but here was given %i" a b c)
     let noEnclosingLoop()             = create          "MC009 No enclosing loop out of which to break"
     let cannotApplyIndexing a         = create (sprintf "MC010 Cannot apply indexing with [] to an expression of type '%s'" a)
+    let functionAlreadyDefined a      = create (sprintf "MC011 A function named '%s' is already defined" a)
+    let missingEntryPoint()           = create          "MC012 Program does not contain a 'main' method suitable for an entry point"

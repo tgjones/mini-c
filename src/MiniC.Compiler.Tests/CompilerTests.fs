@@ -92,6 +92,8 @@ let ``can compile, save and execute application with I/O``() =
 [<TestCase("error21.minic", "MC004 Cannot convert type 'int' to 'int[]'")>]
 [<TestCase("error22.minic", "MC010 Cannot apply indexing with [] to an expression of type 'int'")>]
 [<TestCase("error23.minic", "MC004 Cannot convert type 'int[]' to 'int'")>]
+[<TestCase("error24.minic", "MC011 A function named 'func' is already defined")>]
+[<TestCase("error25.minic", "MC012 Program does not contain a 'main' method suitable for an entry point")>]
 let ``can detect semantic errors`` sourceFile (compilerError : string) =
     let code = File.ReadAllText(Path.Combine("Sources", sourceFile))
     Assert.That(
