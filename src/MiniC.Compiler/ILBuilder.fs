@@ -91,12 +91,6 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
         | Ast.LessEqual -> Cle
         | _ -> failwith "Shouldn't be here"
 
-    and processLiteralExpression =
-        function
-        | Ast.IntLiteral(x)   -> [ Ldc_I4(x) ]
-        | Ast.FloatLiteral(x) -> [ Ldc_R8(x) ]
-        | Ast.BoolLiteral(x)  -> [ (if x then Ldc_I4(1) else Ldc_I4(0)) ]
-
     and processIdentifierLoad identifierRef =
         match lookupILVariableScope identifierRef with
         | FieldScope(v)    -> [ Ldsfld v ]
@@ -124,19 +118,28 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
                           [ Stelem (typeOf (semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec i).Type) ]
                           [ Ldloc arrayAssignmentLocals.[ae] ] ]
         | Ast.BinaryExpression(a, b, c) -> processBinaryExpression (a, b, c)
-        | Ast.UnaryExpression(a, b) -> processUnaryExpression (a, b)
-        | Ast.IdentifierExpression(i) -> processIdentifierExpression i
-        | Ast.ArrayIdentifierExpression(i, e) -> processArrayIdentifierExpression (i, e)
-        | Ast.FunctionCallExpression(i, a) -> processFunctionCallExpression (i, a)
-        | Ast.ArraySizeExpression(i) -> processArraySizeExpression i
-        | Ast.LiteralExpression(x) -> processLiteralExpression x
+        | Ast.UnaryExpression(op, e) ->
+            List.concat [ processExpression e
+                          processUnaryOperator op]
+        | Ast.IdentifierExpression(i) -> processIdentifierLoad i
+        | Ast.ArrayIdentifierExpression(i, e) ->
+            List.concat [ processIdentifierLoad i
+                          processExpression e
+                          [ Ldelem (typeOf (semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec i).Type) ] ]
+        | Ast.FunctionCallExpression(i, a) ->
+            List.concat [ a |> List.collect processExpression
+                          [ Call i ] ]
+        | Ast.ArraySizeExpression(i) ->
+            List.concat [ processIdentifierLoad i
+                          [ Ldlen ] ]
+        | Ast.LiteralExpression(l) ->
+            match l with
+            | Ast.IntLiteral(x)   -> [ Ldc_I4(x) ]
+            | Ast.FloatLiteral(x) -> [ Ldc_R8(x) ]
+            | Ast.BoolLiteral(x)  -> [ (if x then Ldc_I4(1) else Ldc_I4(0)) ]
         | Ast.ArrayAllocationExpression(t, e) ->
             List.concat [ processExpression e
                           [ Newarr (typeOf t) ] ]
-
-    and processUnaryExpression (operator, expression) =
-        List.concat [ processExpression expression
-                      processUnaryOperator operator ]
 
     and processUnaryOperator =
         function
@@ -144,30 +147,16 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
         | Ast.Negate        -> [ Neg ]
         | Ast.Identity      -> [ ]
 
-    and processIdentifierExpression identifierRef =
-        processIdentifierLoad identifierRef
-
-    and processArrayIdentifierExpression (identifierRef, expression) =
-        List.concat [ processIdentifierLoad identifierRef
-                      processExpression expression
-                      [ Ldelem (typeOf (semanticAnalysisResult.SymbolTable.GetIdentifierTypeSpec identifierRef).Type) ] ]
-
-    and processFunctionCallExpression (identifier, arguments) =
-        List.concat [ arguments |> List.collect processExpression
-                      [ Call identifier ] ]
-
-    and processArraySizeExpression identifierRef =
-        List.concat [ processIdentifierLoad identifierRef
-                      [ Ldlen ] ]
-
-    and processReturnStatement =
-        function
-        | Some(x) -> (processExpression x) @ [ Ret ]
-        | None    -> [ Ret ]
-
     and processStatement =
         function
-        | Ast.ExpressionStatement(x) -> processExpressionStatement x
+        | Ast.ExpressionStatement(x) ->
+            match x with
+            | Ast.Expression(x) ->
+                let isNotVoid = semanticAnalysisResult.ExpressionTypes.[x].Type <> Ast.Void
+                List.concat [ processExpression x
+                              (if isNotVoid then [ Pop ] else []) ]
+                
+            | Ast.Nop -> []
         | Ast.CompoundStatement(_, s) -> s |> List.collect processStatement
         | Ast.IfStatement(e, s1, Some(s2)) ->
             let thenLabel = makeLabel()
@@ -202,17 +191,12 @@ type ILMethodBuilder(semanticAnalysisResult : SemanticAnalysisResult,
                                        [ Label endLabel ] ]
             currentWhileStatementEndLabel.Pop() |> ignore
             result
-        | Ast.ReturnStatement(x) -> processReturnStatement x
-        | Ast.BreakStatement -> [ Br (currentWhileStatementEndLabel.Peek()) ]
-
-    and processExpressionStatement =
-        function
-        | Ast.Expression(x) ->
-            let isNotVoid = semanticAnalysisResult.ExpressionTypes.[x].Type <> Ast.Void
-            List.concat [ processExpression x
-                          (if isNotVoid then [ Pop ] else []) ]
-                
-        | Ast.Nop -> []
+        | Ast.ReturnStatement(x) ->
+            match x with
+            | Some(x) -> (processExpression x) @ [ Ret ]
+            | None    -> [ Ret ]
+        | Ast.BreakStatement ->
+            [ Br (currentWhileStatementEndLabel.Peek()) ]
 
     let processVariableDeclaration (mutableIndex : byref<_>) f d =
         let v = createILVariable d
