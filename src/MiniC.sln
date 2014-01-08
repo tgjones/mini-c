@@ -1,14 +1,16 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MiniC.Compiler", "MiniC.Compiler\MiniC.Compiler.fsproj", "{2860D24F-85D9-4BC7-8463-EE1EC134290D}"
-EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MiniC.Compiler.Tests", "MiniC.Compiler.Tests\MiniC.Compiler.Tests.fsproj", "{ADA721D1-B2FB-4C8C-A435-8D6649A050F2}"
-EndProject
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{BD1E5409-ACF7-4843-8EA1-CC2D4C7F3587}"
 	ProjectSection(SolutionItems) = preProject
 		..\docs\Grammar.txt = ..\docs\Grammar.txt
 	EndProjectSection
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MiniC.Compiler", "MiniC.Compiler\MiniC.Compiler.fsproj", "{2860D24F-85D9-4BC7-8463-EE1EC134290D}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MiniC.Compiler.Tests", "MiniC.Compiler.Tests\MiniC.Compiler.Tests.fsproj", "{ADA721D1-B2FB-4C8C-A435-8D6649A050F2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniC.Compiler.Demo", "MiniC.Compiler.Demo\MiniC.Compiler.Demo.csproj", "{BAE211A9-744C-42C9-A70E-3A16505034CF}"
 EndProject
